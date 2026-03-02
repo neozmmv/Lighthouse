@@ -10,4 +10,14 @@ export default defineConfig({
       TanStackRouterVite(),
       tailwindcss(),
   ],
+  // proxy sends /api/ to localhost:8000 (fastapi backend)
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
 })

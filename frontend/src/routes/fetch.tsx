@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 export const Route = createFileRoute("/fetch")({
   component: RouteComponent,
@@ -9,8 +10,9 @@ function RouteComponent() {
   const [data, setData] = useState<{ Hello: string }>({ Hello: "" });
 
   useEffect(() => {
-    fetch("http://localhost:8000/")
-      .then((response) => response.json())
+    axios
+      .get("/api/")
+      .then((response) => response.data)
       .then((data) => setData(data));
   }, []);
   return (
