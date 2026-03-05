@@ -5,17 +5,10 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes beamPulse {
-  0%, 100% { opacity: 0.05; }
-  50%       { opacity: 0.18; }
-}
-
 .hero-eyebrow  { animation: fadeUp 0.5s ease both; animation-delay: 0.05s; opacity: 0; }
 .hero-title    { animation: fadeUp 0.55s ease both; animation-delay: 0.18s; opacity: 0; }
 .hero-body     { animation: fadeUp 0.55s ease both; animation-delay: 0.30s; opacity: 0; }
 .hero-actions  { animation: fadeUp 0.55s ease both; animation-delay: 0.42s; opacity: 0; }
-
-.beam-ray      { animation: beamPulse 5s ease-in-out infinite; }
 
 :root {
   font-family: 'DM Sans', system-ui, Avenir, Helvetica, Arial, sans-serif;
