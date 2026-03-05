@@ -1,4 +1,4 @@
-<img src="./frontend/public/Lighthouse.svg" alt="Lighthouse Logo"/>
+<img height=144px src="./frontend/public/Lighthouse.svg" alt="Lighthouse Logo"/>
 
 # Lighthouse
 
