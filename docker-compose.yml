@@ -1,4 +1,22 @@
 services:
+  tor:
+      image: leplusorg/tor:latest
+      user: root # Run as root to allow Tor to create the hidden service directory
+      environment:
+        # api running on localhost:8000, bind to all interfaces...
+        - SOCKS_HOSTNAME=0.0.0.0
+        - |
+          TORRC_APPEND=HiddenServiceDir /var/lib/tor/hidden_service/
+          HiddenServicePort 80 host.docker.internal:80
+      extra_hosts:
+        # Allow Tor to resolve host.docker.internal to the host machine's IP address
+        - "host.docker.internal:host-gateway"
+      ports:
+        # Expose the SOCKS proxy port (optional, for debugging or other uses)
+        - "9050:9050"
+      volumes:
+        # Persist Tor data, including the hidden service keys and hostname
+        - ./docker/tor-data:/var/lib/tor:Z
   caddy:
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -13,6 +13,7 @@ export default defineConfig({
   // proxy sends /api/ to localhost:8000 (fastapi backend)
   // for development only, in production Caddy will handle this
   server: {
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

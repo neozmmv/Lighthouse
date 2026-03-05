@@ -36,10 +36,15 @@ Tor's hidden service acts as the networking layer, so your machine is reachable 
 **Start**
 
 ```bash
-docker compose up -d
+sudo docker compose up -d
 ```
 
-Lighthouse will spin up the frontend, backend, storage, and Tor hidden service. Your `.onion` address will be printed to the logs once Tor is ready.
+**Get your `.onion` address**
+```bash
+sudo cat ./docker/tor-data/hidden_service/hostname
+```
+
+Lighthouse will spin up the frontend, backend, storage, and Tor hidden service.
 
 **Share** the `.onion` address with the sender and wait for the file to arrive.
 
