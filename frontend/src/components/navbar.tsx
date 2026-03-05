@@ -7,7 +7,13 @@ export default function Navbar() {
         alt="Lighthouse Logo"
         className="sm:h-20 h-18"
       />
-      <DiGithubBadge className="h-14 w-14 mr-4" />
+      <a
+        href="https://github.com/neozmmv/lighthouse"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <DiGithubBadge className="h-14 w-14 mr-4 text-gray-800" />
+      </a>
     </nav>
   );
 }
