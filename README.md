@@ -11,7 +11,7 @@ Lighthouse removes the usual friction from receiving files from someone:
 - No port forwarding
 - No cloud storage accounts
 - No server setup
--
+- No file size limits
 
 You spin it up, Tor creates a hidden service and gives you an `.onion` address. You share that address with whoever needs to send you files. They open it in Tor Browser, upload the file, you download it. Done. Shut it down.
 
