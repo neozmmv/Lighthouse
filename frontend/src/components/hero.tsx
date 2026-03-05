@@ -9,7 +9,7 @@ export default function Hero() {
         {/* ── Left: text ── */}
         <div className="flex flex-col gap-6">
           <p className="hero-eyebrow text-xs font-semibold tracking-[0.18em] uppercase text-purple-900">
-            Self-hosted · Open source
+            You found the LIGHTHOUSE!
           </p>
 
           <h1

@@ -1,14 +1,40 @@
 @import "tailwindcss";
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.hero-eyebrow  { animation: fadeUp 0.5s ease both; animation-delay: 0.05s; opacity: 0; }
-.hero-title    { animation: fadeUp 0.55s ease both; animation-delay: 0.18s; opacity: 0; }
-.hero-body     { animation: fadeUp 0.55s ease both; animation-delay: 0.30s; opacity: 0; }
-.hero-actions  { animation: fadeUp 0.55s ease both; animation-delay: 0.42s; opacity: 0; }
+.hero-eyebrow {
+  animation: fadeUp 0.5s ease both;
+  animation-delay: 0.05s;
+  opacity: 0;
+}
+
+.hero-title {
+  animation: fadeUp 0.55s ease both;
+  animation-delay: 0.18s;
+  opacity: 0;
+}
+
+.hero-body {
+  animation: fadeUp 0.55s ease both;
+  animation-delay: 0.30s;
+  opacity: 0;
+}
+
+.hero-actions {
+  animation: fadeUp 0.55s ease both;
+  animation-delay: 0.42s;
+  opacity: 0;
+}
 
 :root {
   font-family: 'DM Sans', system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -27,12 +53,6 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
 }
 
 body {
