@@ -6,9 +6,9 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-      react(),
-      TanStackRouterVite(),
-      tailwindcss(),
+    react(),
+    TanStackRouterVite(),
+    tailwindcss(),
   ],
   // proxy sends /api/ to localhost:8000 (fastapi backend)
   server: {
