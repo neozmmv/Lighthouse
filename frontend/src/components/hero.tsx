@@ -29,9 +29,13 @@ export default function Hero() {
 
           <div className="hero-actions flex items-center gap-3 flex-wrap">
             <a
-              href="/upload"
+              href="#upload"
               className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-purple-900 rounded-md hover:bg-purple-950 transition-colors"
               style={{ color: "#ffffff" }}
+              onClick={e => {
+                e.preventDefault();
+                document.getElementById("upload")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               Get started <span aria-hidden>→</span>
             </a>

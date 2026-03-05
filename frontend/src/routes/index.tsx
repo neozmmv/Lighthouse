@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import axios from "axios";
 import Hero from "../components/hero";
 import Navbar from "../components/navbar";
+import Dropzone from "../components/dropzone";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -13,6 +12,7 @@ function RouteComponent() {
     <>
       <Navbar />
       <Hero />
+      <Dropzone />
     </>
   );
 }
