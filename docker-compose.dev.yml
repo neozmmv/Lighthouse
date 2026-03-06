@@ -1,11 +1,35 @@
 # docker-compose.dev.yml
 # run locally with `docker compose -f docker-compose.dev.yml up`
 # this is for development only, does not include the tor service.
+networks:
+  lighthouse:
+
 services:
+  backend:
+    build:
+      context: ./backend/app
+      dockerfile: Dockerfile
+    container_name: lighthouse-backend
+    ports:
+      - "8000:8000"
+    networks:
+      - lighthouse
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
   caddy:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     image: caddy:alpine
+    networks:
+      - lighthouse
     ports:
       - "80:80"
       - "443:443"
@@ -13,12 +37,16 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    depends_on:
+      - backend
     restart: unless-stopped
 
   minio:
     image: minio/minio
     container_name: lighthouse-minio
     command: server /data --console-address ":9001"
+    networks:
+      - lighthouse
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse} # default to "lighthouse" if not set in .env
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret} # default to "lighthouse_secret" if not set in .env
@@ -37,6 +65,8 @@ services:
   minio-init:
     image: minio/mc
     container_name: lighthouse-minio-init
+    networks:
+      - lighthouse
     depends_on:
       minio:
         condition: service_healthy

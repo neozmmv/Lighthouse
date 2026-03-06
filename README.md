@@ -67,6 +67,12 @@ For getting development dependencies:
 ```bash
 sudo docker compose -f docker-compose.dev.yml up -d
 ```
+or
+
+```bash
+sudo docker compose -f docker-compose.dev.yml up -d --build
+```
+
 Front-end:
 ```bash
 cd frontend
