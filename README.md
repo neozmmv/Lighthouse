@@ -51,6 +51,15 @@ Lighthouse will spin up the frontend, backend, storage, and Tor hidden service.
 
 Access **localhost** on your browser to be able to go to the `/files` route and download your file.
 
+You can access the **MinIO** Panel on `http://localhost:9001`.
+
+By default, the access is **"lighthouse"** and password **"lighthouse_secret"**. You can change these values by creating a `.env` file on the project root with these values:
+
+```
+MINIO_ROOT_USER=yourUser
+MINIO_ROOT_PASSWORD=yourPassword
+```
+
 This route is inaccessible outside your localhost, so only you have access to your files.
 
 **Stop**
