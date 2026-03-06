@@ -1,4 +1,5 @@
-import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { useState, useRef } from "react";
+import type { DragEvent, ChangeEvent } from "react";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB — S3 minimum part size
 

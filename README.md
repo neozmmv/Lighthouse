@@ -44,6 +44,12 @@ sudo docker compose up -d
 sudo cat ./docker/tor-data/hidden_service/hostname
 ```
 
+or
+
+```bash
+sudo docker exec lighthouse-tor cat /var/lib/tor/hidden_service/hostname
+```
+
 Lighthouse will spin up the frontend, backend, storage, and Tor hidden service.
 
 **Share** the `.onion` address with the sender and wait for the file to arrive.
