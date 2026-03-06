@@ -1,7 +1,8 @@
 import os
 import boto3
 from botocore.config import Config
-from fastapi import FastAPI
+from botocore.exceptions import ClientError
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from uuid import uuid4
@@ -137,16 +138,22 @@ def list_files():
 
 @app.get("/api/files/{file_id:path}/download")
 def download_file(file_id: str):
-    meta = s3.head_object(Bucket=BUCKET, Key=file_id)
-    filename = meta["Metadata"].get("filename", file_id)
-
-    url = s3_public.generate_presigned_url(
-        "get_object",
-        Params={
-            "Bucket": BUCKET,
-            "Key": file_id,
-            "ResponseContentDisposition": f'attachment; filename="{filename}"',
-        },
-        ExpiresIn=3600,
-    )
+    try:
+        meta = s3.head_object(Bucket=BUCKET, Key=file_id)
+        filename = meta["Metadata"].get("filename", file_id)
+        url = s3_public.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": BUCKET,
+                "Key": file_id,
+                "ResponseContentDisposition": f'attachment; filename="{filename}"',
+            },
+            ExpiresIn=3600,
+        )
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_msg = e.response["Error"]["Message"]
+        if error_code == "404":
+            raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=500, detail=f"Error generating download URL: {error_msg}")
     return {"url": url, "filename": filename}
