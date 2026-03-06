@@ -40,11 +40,6 @@ sudo docker compose up -d
 ```
 
 **Get your `.onion` address**
-```bash
-sudo cat ./docker/tor-data/hidden_service/hostname
-```
-
-or
 
 ```bash
 sudo docker exec lighthouse-tor cat /var/lib/tor/hidden_service/hostname

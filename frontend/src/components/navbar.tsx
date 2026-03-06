@@ -11,7 +11,7 @@ export default function Navbar() {
       </Link>
       <div>
         <a
-        href="/files"
+        href="http://localhost:8080/files"
         className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-purple-900 rounded-md hover:bg-purple-950 transition-colors"
         style={{ color: "#ffffff" }}
       >

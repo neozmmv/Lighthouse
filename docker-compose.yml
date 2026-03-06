@@ -18,6 +18,8 @@ services:
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
+    volumes:
+      - tor_data:/var/lib/tor:ro
     depends_on:
       minio:
         condition: service_healthy
@@ -41,6 +43,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "127.0.0.1:8080:8080"   # files management, localhost only
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -63,8 +66,6 @@ services:
         HiddenServicePort 80 caddy:80
     volumes:
       - tor_data:/var/lib/tor
-    depends_on:
-      - caddy
     restart: unless-stopped
 
   minio:

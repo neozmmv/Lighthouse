@@ -16,12 +16,22 @@
     }
 
     handle /files* {
-        @denied not remote_ip private_ranges
-        respond @denied 403
-        reverse_proxy frontend:5173
+        respond 403
+    }
+
+    # MinIO bucket proxy — presigned upload/download URLs use the onion address on port 80
+    handle /lighthouse/* {
+        reverse_proxy minio:9000 {
+            header_up Host {host}
+        }
     }
 
     handle {
         reverse_proxy frontend:5173
     }
+}
+
+# files management — only reachable from the host machine
+:8080 {
+    reverse_proxy frontend:5173
 }
