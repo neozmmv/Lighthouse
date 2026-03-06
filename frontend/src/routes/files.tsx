@@ -1,15 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
-import Navbar from '../components/navbar'
+import { createFileRoute } from "@tanstack/react-router";
+import Navbar from "../components/navbar";
+import FileList from "../components/file-list";
+import Footer from "../components/footer";
 
-export const Route = createFileRoute('/files')({
+export const Route = createFileRoute("/files")({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
   return (
     <>
-    <Navbar />
-    <h1>File Management!</h1>
+      <Navbar />
+      <FileList />
+      <Footer />
     </>
-  )
+  );
 }
