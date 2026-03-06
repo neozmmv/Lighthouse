@@ -60,7 +60,7 @@ def health():
 
 @app.post("/api/upload/init")
 def upload_init(body: InitUploadRequest):
-    file_id = str(uuid4())
+    file_id = f"{uuid4()}-{body.filename}"
 
     # starts multipart upload, returns the upload_id
     response = s3.create_multipart_upload(
