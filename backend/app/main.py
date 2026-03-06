@@ -114,3 +114,39 @@ def upload_abort(body: AbortUploadRequest):
         UploadId=body.upload_id,
     )
     return {"status": "aborted"}
+
+
+# ---- internal endpoints (not exposed via Caddy, localhost:8000 only) ----
+
+@app.get("/api/files")
+def list_files():
+    response = s3.list_objects_v2(Bucket=BUCKET)
+    files = response.get("Contents", [])
+    result = []
+    for f in files:
+        meta = s3.head_object(Bucket=BUCKET, Key=f["Key"])
+        filename = meta["Metadata"].get("filename", f["Key"])
+        result.append({
+            "file_id": f["Key"],
+            "filename": filename,
+            "size": f["Size"],
+            "uploaded_at": f["LastModified"].isoformat(),
+        })
+    return result
+
+
+@app.get("/api/files/{file_id:path}/download")
+def download_file(file_id: str):
+    meta = s3.head_object(Bucket=BUCKET, Key=file_id)
+    filename = meta["Metadata"].get("filename", file_id)
+
+    url = s3_public.generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": BUCKET,
+            "Key": file_id,
+            "ResponseContentDisposition": f'attachment; filename="{filename}"',
+        },
+        ExpiresIn=3600,
+    )
+    return {"url": url, "filename": filename}

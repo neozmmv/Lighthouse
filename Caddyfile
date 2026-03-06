@@ -1,4 +1,8 @@
 :80 {
+    handle /api/files* {
+        respond 404
+    }
+
     handle /api/* {
         reverse_proxy backend:8000
     }
