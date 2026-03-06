@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# ---- dev stage ----
+FROM node:20-alpine AS dev
 
 WORKDIR /app
 
@@ -7,5 +8,19 @@ RUN npm install
 
 # source is mounted at runtime via volume for hot reload
 EXPOSE 5173
-
 CMD ["npm", "run", "dev"]
+
+
+# ---- prod stage ----
+FROM node:20-alpine AS prod
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+EXPOSE 5173
+CMD ["npm", "run", "preview", "--", "--host", "--port", "5173"]

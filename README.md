@@ -48,6 +48,10 @@ Lighthouse will spin up the frontend, backend, storage, and Tor hidden service.
 
 **Share** the `.onion` address with the sender and wait for the file to arrive.
 
+Access **localhost** on your browser to be able to go to the `/files` route and download your file.
+
+This route is inaccessible outside your localhost, so only you have access to your files.
+
 **Stop**
 
 ```bash

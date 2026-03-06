@@ -1,26 +1,43 @@
+# docker-compose.yml
+# production — run with `docker compose up -d`
+networks:
+  lighthouse:
+
 services:
-  tor:
-      image: leplusorg/tor:latest
-      user: root # Run as root to allow Tor to create the hidden service directory
-      environment:
-        # api running on localhost:8000, bind to all interfaces...
-        - SOCKS_HOSTNAME=0.0.0.0
-        - |
-          TORRC_APPEND=HiddenServiceDir /var/lib/tor/hidden_service/
-          HiddenServicePort 80 host.docker.internal:80
-      extra_hosts:
-        # Allow Tor to resolve host.docker.internal to the host machine's IP address
-        - "host.docker.internal:host-gateway"
-      ports:
-        # Expose the SOCKS proxy port (optional, for debugging or other uses)
-        - "9050:9050"
-      volumes:
-        # Persist Tor data, including the hidden service keys and hostname
-        - ./docker/tor-data:/var/lib/tor:Z
+  backend:
+    build:
+      context: ./backend/app
+      dockerfile: Dockerfile
+    container_name: lighthouse-backend
+    ports:
+      - "127.0.0.1:8000:8000"   # localhost only — needed for file management page
+    networks:
+      - lighthouse
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: prod
+    container_name: lighthouse-frontend
+    networks:
+      - lighthouse
+    restart: unless-stopped
+
   caddy:
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     image: caddy:alpine
+    container_name: lighthouse-caddy
+    networks:
+      - lighthouse
     ports:
       - "80:80"
       - "443:443"
@@ -28,8 +45,70 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
     restart: unless-stopped
+
+  tor:
+    image: leplusorg/tor:latest
+    container_name: lighthouse-tor
+    user: root
+    networks:
+      - lighthouse
+    environment:
+      - SOCKS_HOSTNAME=0.0.0.0
+      - |
+        TORRC_APPEND=HiddenServiceDir /var/lib/tor/hidden_service/
+        HiddenServicePort 80 caddy:80
+    volumes:
+      - tor_data:/var/lib/tor
+    depends_on:
+      - caddy
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: lighthouse-minio
+    command: server /data --console-address ":9001"
+    networks:
+      - lighthouse
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
+    ports:
+      - "127.0.0.1:9000:9000"   # localhost only — presigned URLs from host
+      - "127.0.0.1:9001:9001"   # localhost only — minio console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc
+    container_name: lighthouse-minio-init
+    networks:
+      - lighthouse
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+        mc mb --ignore-existing local/lighthouse &&
+        echo 'Bucket lighthouse created.'
+      "
+    restart: on-failure
 
 volumes:
   caddy_data:
   caddy_config:
+  minio_data:
+  tor_data:
