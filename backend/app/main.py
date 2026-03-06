@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from uuid import uuid4
 
-app = FastAPI()
+_debug = os.getenv("DEBUG", "false").lower() == "true"
+app = FastAPI(docs_url="/docs" if _debug else None, redoc_url=None, openapi_url="/openapi.json" if _debug else None)
 
 app.add_middleware(
     CORSMiddleware,

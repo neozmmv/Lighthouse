@@ -15,6 +15,7 @@ services:
     networks:
       - lighthouse
     environment:
+      DEBUG: "true"
       MINIO_ENDPOINT: http://minio:9000
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
