@@ -13,4 +13,4 @@ go build -o lighthouse
 ```
 
 GitHub Actions will build on new tag, like "v1.1.2"
-`git tag v1.1.2`, `git push`
+`git tag v1.1.2`, `git push origin v1.1.2`
