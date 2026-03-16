@@ -10,7 +10,7 @@ var versionCmd = &cobra.Command{
 	Use: "version",
 	Short: "Print the version of Lighthouse",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Lighthouse CLI v%s\n", version)
+		fmt.Printf("Lighthouse CLI %s\n", version)
 	},
 }
 
