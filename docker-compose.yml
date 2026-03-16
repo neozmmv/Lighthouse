@@ -5,9 +5,7 @@ networks:
 
 services:
   backend:
-    build:
-      context: ./backend/app
-      dockerfile: Dockerfile
+    image: neozmmv/lighthouse-backend:latest
     container_name: lighthouse-backend
     ports:
       - "127.0.0.1:8000:8000" # localhost only — needed for file management page
@@ -26,10 +24,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: prod
+    image: neozmmv/lighthouse-frontend:latest
     container_name: lighthouse-frontend
     networks:
       - lighthouse
