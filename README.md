@@ -36,8 +36,16 @@ Tor's hidden service acts as the networking layer, so your machine is reachable 
 **Start**
 
 ```bash
-sudo docker compose up -d
+# For Linux / MacOS
+# create lighthouse folder
+mkdir lighthouse && cd lighthouse
+
+curl -LO https://github.com/neozmmv/Lighthouse/releases/latest/download/docker-compose.yml
+
+docker compose up -d # use sudo if needed
 ```
+
+For Windows, create a "lighthouse" folder, download [docker-compose.yml](https://github.com/neozmmv/Lighthouse/releases/latest/download/docker-compose.yml) and run `docker compose up -d`.
 
 **Get your `.onion` address**
 
@@ -77,10 +85,13 @@ lighthouse/
 ```
 
 ## For development
+
 For getting development dependencies:
+
 ```bash
 sudo docker compose -f docker-compose.dev.yml up -d
 ```
+
 or
 
 ```bash
@@ -88,6 +99,7 @@ sudo docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 Front-end:
+
 ```bash
 cd frontend
 npm install
@@ -95,6 +107,7 @@ npm run dev
 ```
 
 Back-end:
+
 ```bash
 cd backend/app
 python -m venv env
