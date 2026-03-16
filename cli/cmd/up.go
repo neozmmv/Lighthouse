@@ -11,21 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// gets directory for lighthouse (.lighthouse in home directory)
-func getLighthouseDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	dir := filepath.Join(home, ".lighthouse")
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-	
-	return dir, nil
-}
-
 func downloadFiles() error {
 	dir, err := getLighthouseDir()
 	if err != nil {
@@ -88,11 +73,18 @@ var upCmd = &cobra.Command{
 		if err := downloadFiles(); err != nil {
 			return err
 		}
-		// if has file and not error, run docker compose
+		// if has files and not error, run docker compose
 		dir, err := getLighthouseDir()
 		if err != nil {
 			return fmt.Errorf("failed to get lighthouse directory: %w", err)
 		}
+
+		running := isRunning()
+		if running {
+			fmt.Println("Lighthouse is already running.")
+			return nil
+		}
+		
 		fmt.Println("Starting Lighthouse...")
 		c := exec.Command("docker", "compose", "up", "-d")
 		c.Dir = dir

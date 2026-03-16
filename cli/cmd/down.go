@@ -16,6 +16,13 @@ var downCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to get lighthouse directory: %w", err)
 		}
+
+		running := isRunning()
+		if !running {
+			fmt.Println("Lighthouse is already down.")
+			return nil
+		}
+
 		fmt.Println("Stopping Lighthouse...")
 		c := exec.Command("docker", "compose", "down")
 		c.Stderr = os.Stderr
