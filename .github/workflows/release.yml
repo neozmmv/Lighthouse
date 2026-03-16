@@ -50,3 +50,5 @@ jobs:
             cli/lighthouse-windows-amd64.exe
             docker-compose.yml
             Caddyfile
+            install.sh
+            uninstall.sh
