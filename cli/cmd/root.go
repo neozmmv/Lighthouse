@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev"
+
 var rootCmd = &cobra.Command{
 	Use: "lighthouse",
 	Short: "A temporary file-receiving station on the Tor Network.",
