@@ -29,6 +29,27 @@ Tor's hidden service acts as the networking layer, so your machine is reachable 
 - **Backend** — Python (FastAPI), proxied at `/api/`
 - **Transport** — Tor hidden service
 
+## Installation
+
+### Linux / macOS
+
+```bash
+curl -fsSL https://github.com/neozmmv/Lighthouse/releases/latest/download/install.sh | sh
+```
+
+### Windows
+
+Download the latest `lighthouse-windows-amd64.exe` from the [releases page](https://github.com/neozmmv/Lighthouse/releases/latest), rename it to `lighthouse.exe` and move it to a folder in your PATH (e.g. `C:\Windows\System32`), or add its folder to PATH via **System Properties → Environment Variables**.
+
+### Manual (any platform)
+
+Download the binary for your platform from the [releases page](https://github.com/neozmmv/Lighthouse/releases/latest), make it executable and move it to your PATH:
+
+```bash
+chmod +x lighthouse-linux-amd64
+sudo mv lighthouse-linux-amd64 /usr/local/bin/lighthouse
+```
+
 ## Usage
 
 > Prerequisites: Docker and Docker Compose.
@@ -36,24 +57,14 @@ Tor's hidden service acts as the networking layer, so your machine is reachable 
 **Start**
 
 ```bash
-# For Linux / MacOS
-# create lighthouse folder
-mkdir lighthouse && cd lighthouse
-
-curl -LO https://github.com/neozmmv/Lighthouse/releases/latest/download/docker-compose.yml
-
-docker compose up -d # use sudo if needed
+lighthouse up
 ```
-
-For Windows, create a "lighthouse" folder, download [docker-compose.yml](https://github.com/neozmmv/Lighthouse/releases/latest/download/docker-compose.yml) and run `docker compose up -d`.
 
 **Get your `.onion` address**
 
 ```bash
-sudo docker exec lighthouse-tor cat /var/lib/tor/hidden_service/hostname
+lighthouse url
 ```
-
-Lighthouse will spin up the frontend, backend, storage, and Tor hidden service.
 
 **Share** the `.onion` address with the sender and wait for the file to arrive.
 
@@ -73,7 +84,13 @@ This route is inaccessible outside your localhost, so only you have access to yo
 **Stop**
 
 ```bash
-sudo docker compose down
+lighthouse down
+```
+
+## Uninstall
+
+```bash
+curl -fsSL https://github.com/neozmmv/Lighthouse/releases/latest/download/uninstall.sh | sh
 ```
 
 ## Project structure
@@ -81,6 +98,7 @@ sudo docker compose down
 ```
 lighthouse/
 ├── backend/      # Python API
+├── cli/          # Go CLI
 └── frontend/     # React app
 ```
 
