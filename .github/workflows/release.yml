@@ -1,0 +1,39 @@
+name: Release CLI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Build Linux
+        run: go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-linux-amd64
+        working-directory: cli
+
+      - name: Build macOS
+        run: GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-amd64
+        working-directory: cli
+
+      - name: Build Windows
+        run: GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-windows-amd64.exe
+        working-directory: cli
+
+      - name: Criar Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            cli/lighthouse-linux-amd64
+            cli/lighthouse-darwin-amd64
+            cli/lighthouse-windows-amd64.exe
+            docker-compose.yml
+            Caddyfile
