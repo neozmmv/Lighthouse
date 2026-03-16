@@ -11,3 +11,6 @@ For development, build with
 ```bash
 go build -o lighthouse
 ```
+
+GitHub Actions will build on new tag, like "v1.1.2"
+`git tag v1.1.2`, `git push`
