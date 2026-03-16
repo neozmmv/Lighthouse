@@ -26,16 +26,27 @@ jobs:
         run: GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-amd64
         working-directory: cli
 
+      - name: Build Linux ARM
+        run: GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-linux-arm64
+        working-directory: cli
+
+      - name: Build macOS ARM (Apple Silicon)
+        run: GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-arm64
+        working-directory: cli
+
       - name: Build Windows
         run: GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-windows-amd64.exe
         working-directory: cli
 
-      - name: Criar Release
+      - name: Create new Release
         uses: softprops/action-gh-release@v2
         with:
+          name: "Lighthouse ${{ github.ref_name }}"
           files: |
             cli/lighthouse-linux-amd64
+            cli/lighthouse-linux-arm64
             cli/lighthouse-darwin-amd64
+            cli/lighthouse-darwin-arm64
             cli/lighthouse-windows-amd64.exe
             docker-compose.yml
             Caddyfile
