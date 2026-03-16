@@ -2,9 +2,9 @@ name: Build & Push Docker Images
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
@@ -29,6 +29,6 @@ jobs:
       - name: Backend - Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ./backend/app
           push: true
           tags: neozmmv/lighthouse-backend:latest
