@@ -22,6 +22,15 @@ func getLighthouseDir() (string, error) {
 	return dir, nil
 }
 
+func hasDocker() bool {
+	c:= exec.Command("docker", "--version")
+	return c.Run() == nil
+}
+
+	func hasCompose() bool {
+		c:= exec.Command("docker", "compose", "version")
+		return c.Run() == nil
+	}
 
 func isRunning() bool {
 	dir, err := getLighthouseDir()
