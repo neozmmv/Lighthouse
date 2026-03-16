@@ -24,6 +24,6 @@
 }
 
 # files management — only reachable from the host machine
-:8080 {
+:4405 {
     reverse_proxy frontend:5173
 }

@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
     container_name: lighthouse-backend
     ports:
-      - "127.0.0.1:8000:8000"   # localhost only — needed for file management page
+      - "127.0.0.1:8000:8000" # localhost only — needed for file management page
     networks:
       - lighthouse
     environment:
@@ -43,7 +43,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "127.0.0.1:8080:8080"   # files management, localhost only
+      - "127.0.0.1:4405:4405" # files management, localhost only
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -78,8 +78,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
     ports:
-      - "127.0.0.1:9000:9000"   # localhost only — presigned URLs from host
-      - "127.0.0.1:9001:9001"   # localhost only — minio console
+      - "127.0.0.1:9000:9000" # localhost only — presigned URLs from host
+      - "127.0.0.1:9001:9001" # localhost only — minio console
     volumes:
       - minio_data:/data
     healthcheck:

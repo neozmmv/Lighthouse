@@ -35,7 +35,7 @@ services:
       - lighthouse
     volumes:
       - ./frontend:/app
-      - /app/node_modules  # keep container's node_modules, don't overwrite with host
+      - /app/node_modules # keep container's node_modules, don't overwrite with host
     restart: unless-stopped
 
   caddy:
@@ -45,7 +45,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "127.0.0.1:8080:8080"   # files management, localhost only
+      - "127.0.0.1:4405:4405" # files management, localhost only
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -65,8 +65,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse} # default to "lighthouse" if not set in .env
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret} # default to "lighthouse_secret" if not set in .env
     ports:
-      - "9000:9000"   # for backend
-      - "9001:9001"   # console web panel
+      - "9000:9000" # for backend
+      - "9001:9001" # console web panel
     volumes:
       - minio_data:/data
     healthcheck:
