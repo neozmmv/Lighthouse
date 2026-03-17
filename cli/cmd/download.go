@@ -96,6 +96,10 @@ var downloadCmd = &cobra.Command{
             return fmt.Errorf("Invalid index: %s", args[0])
         }
 
+		if !isRunning() {
+			return fmt.Errorf("Lighthouse is not running. Please start it with 'lighthouse up'")
+		}
+
         files, err := getFiles()
         if err != nil {
             return err
