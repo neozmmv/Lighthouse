@@ -15,17 +15,17 @@ type FileInfo struct {
     UploadedAt string `json:"uploaded_at"`
 }
 
-func getFiles() error {
+func getFiles() ([]FileInfo, error) {
 	resp, err := http.Get("http://localhost:8000/api/files")
 	if err != nil {
 		fmt.Println("Error fetching files:", err)
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var files []FileInfo
 	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
-    	return err
+    	return nil, err
 	}
 	for i, f := range files {
 		var size int64
@@ -41,7 +41,7 @@ func getFiles() error {
 			fmt.Printf("[%d] %s (%dKB)\n", i, f.Filename, size)
 		}
 	}
-	return nil
+	return files, nil
 }
 
 var filesCmd = &cobra.Command{
@@ -52,7 +52,7 @@ var filesCmd = &cobra.Command{
 			fmt.Println("Lighthouse is not running. Please start it with 'lighthouse up' command.")
 			return
 		}
-		if err := getFiles(); err != nil {
+		if _, err := getFiles(); err != nil {
 			fmt.Println("Error:", err)
 		}
 	},
