@@ -36,7 +36,7 @@ services:
     networks:
       - lighthouse
     ports:
-      - "80:80"
+      - "80:80" # if port 80 is occupied, you can change the left side to another port, like "8080:80"
       - "443:443"
       - "127.0.0.1:4405:4405" # files management, localhost only
     volumes:
