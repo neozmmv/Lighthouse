@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import type { DragEvent, ChangeEvent } from "react";
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB — S3 minimum part size
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB per part
 
 type DropState = "idle" | "hovering" | "done" | "uploading" | "success" | "error";
 
@@ -151,8 +151,8 @@ export default function Dropzone() {
       ctx = { file_id, upload_id };
       ctxRef.current = ctx;
 
-      // 2. Upload chunks (up to 5 in parallel)
-      const CONCURRENCY = 5;
+      // 2. Upload chunks (up to 2 in parallel — higher values cause MinIO lock contention)
+      const CONCURRENCY = 2;
       const parts: { part_number: number; etag: string }[] = new Array(totalChunks);
       let nextIndex = 0;
 
