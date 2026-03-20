@@ -10,7 +10,8 @@ interface FileItem {
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
@@ -38,9 +39,15 @@ function SkeletonRow() {
           <div className="h-4 w-52 bg-gray-100 rounded animate-pulse" />
         </div>
       </td>
-      <td className="py-4 px-4"><div className="h-4 w-14 bg-gray-100 rounded animate-pulse" /></td>
-      <td className="py-4 px-4"><div className="h-4 w-36 bg-gray-100 rounded animate-pulse" /></td>
-      <td className="py-4 px-4 text-right"><div className="h-7 w-24 bg-gray-100 rounded-md animate-pulse ml-auto" /></td>
+      <td className="py-4 px-4">
+        <div className="h-4 w-14 bg-gray-100 rounded animate-pulse" />
+      </td>
+      <td className="py-4 px-4">
+        <div className="h-4 w-36 bg-gray-100 rounded animate-pulse" />
+      </td>
+      <td className="py-4 px-4 text-right">
+        <div className="h-7 w-24 bg-gray-100 rounded-md animate-pulse ml-auto" />
+      </td>
     </tr>
   );
 }
@@ -57,7 +64,7 @@ export default function FileList() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch("http://localhost:8000/api/files")
+    fetch("http://localhost:4406/api/files")
       .then((r) => {
         if (!r.ok) throw new Error(`Server responded with ${r.status}`);
         return r.json();
@@ -77,8 +84,8 @@ export default function FileList() {
     setConfirmDelete(null);
     try {
       const r = await fetch(
-        `http://localhost:8000/api/files/${encodeURIComponent(fileId)}`,
-        { method: "DELETE" }
+        `http://localhost:4406/api/files/${encodeURIComponent(fileId)}`,
+        { method: "DELETE" },
       );
       if (!r.ok) throw new Error(`Delete failed: ${r.status}`);
       setFiles((prev) => prev.filter((f) => f.file_id !== fileId));
@@ -93,7 +100,7 @@ export default function FileList() {
     setDownloading(fileId);
     try {
       const r = await fetch(
-        `http://localhost:8000/api/files/${encodeURIComponent(fileId)}/download`
+        `http://localhost:4406/api/files/${encodeURIComponent(fileId)}/download`,
       );
       if (!r.ok) throw new Error("Failed to get download link");
       const { url } = await r.json();
@@ -114,7 +121,9 @@ export default function FileList() {
         {/* Header */}
         <div className="flex items-end justify-between mb-8">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Received files</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Received files
+            </h2>
             {!loading && !error && (
               <p className="text-sm text-gray-400 mt-0.5">
                 {files.length === 0
@@ -168,7 +177,9 @@ export default function FileList() {
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-gray-700">Could not load files</p>
+            <p className="text-sm font-medium text-gray-700">
+              Could not load files
+            </p>
             <p className="text-xs text-gray-400 mt-1">{error}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               Ensure you're accessing from localhost
@@ -177,8 +188,12 @@ export default function FileList() {
               onClick={() => setTick((t) => t + 1)}
               className="mt-5 px-4 py-2 text-xs font-medium text-white rounded-md transition-colors"
               style={{ backgroundColor: "#6d28d9" }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#5b21b6")}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#6d28d9")}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = "#5b21b6")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = "#6d28d9")
+              }
             >
               Try again
             </button>
@@ -191,7 +206,12 @@ export default function FileList() {
           >
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#fafafa" }}>
+                <tr
+                  style={{
+                    borderBottom: "1px solid #e5e7eb",
+                    backgroundColor: "#fafafa",
+                  }}
+                >
                   <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 tracking-wider uppercase">
                     File
                   </th>
@@ -208,7 +228,9 @@ export default function FileList() {
               </thead>
               <tbody>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <SkeletonRow key={i} />
+                  ))
                 ) : files.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-28 text-center">
@@ -225,7 +247,9 @@ export default function FileList() {
                           <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                           <polyline points="13 2 13 9 20 9" />
                         </svg>
-                        <p className="text-sm text-gray-400">No files received yet</p>
+                        <p className="text-sm text-gray-400">
+                          No files received yet
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -243,7 +267,10 @@ export default function FileList() {
                         <div className="flex items-center gap-3 min-w-0">
                           <span
                             className="shrink-0 text-[10px] font-bold tracking-wider font-mono rounded px-1.5 py-0.5"
-                            style={{ backgroundColor: "#f5f3ff", color: "#7c3aed" }}
+                            style={{
+                              backgroundColor: "#f5f3ff",
+                              color: "#7c3aed",
+                            }}
                           >
                             .{getExtension(file.filename)}
                           </span>
@@ -273,22 +300,39 @@ export default function FileList() {
                           {confirmDelete === file.file_id ? (
                             /* inline confirmation */
                             <div className="inline-flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Delete?</span>
+                              <span className="text-xs text-gray-500">
+                                Delete?
+                              </span>
                               <button
                                 onClick={() => handleDelete(file.file_id)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white rounded-md transition-colors"
                                 style={{ backgroundColor: "#ef4444" }}
-                                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
-                                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#ef4444")}
+                                onMouseOver={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#dc2626")
+                                }
+                                onMouseOut={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#ef4444")
+                                }
                               >
                                 Yes
                               </button>
                               <button
                                 onClick={() => setConfirmDelete(null)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 rounded-md border transition-colors"
-                                style={{ borderColor: "#e5e7eb", background: "#fff" }}
-                                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
-                                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#fff")}
+                                style={{
+                                  borderColor: "#e5e7eb",
+                                  background: "#fff",
+                                }}
+                                onMouseOver={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#f9fafb")
+                                }
+                                onMouseOut={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "#fff")
+                                }
                               >
                                 Cancel
                               </button>
@@ -298,28 +342,57 @@ export default function FileList() {
                               {/* Download button */}
                               <button
                                 onClick={() => handleDownload(file.file_id)}
-                                disabled={downloading === file.file_id || deleting === file.file_id}
+                                disabled={
+                                  downloading === file.file_id ||
+                                  deleting === file.file_id
+                                }
                                 className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                 style={{ backgroundColor: "#6d28d9" }}
                                 onMouseOver={(e) => {
                                   if (downloading !== file.file_id)
-                                    e.currentTarget.style.backgroundColor = "#5b21b6";
+                                    e.currentTarget.style.backgroundColor =
+                                      "#5b21b6";
                                 }}
                                 onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = "#6d28d9";
+                                  e.currentTarget.style.backgroundColor =
+                                    "#6d28d9";
                                 }}
                               >
                                 {downloading === file.file_id ? (
                                   <>
-                                    <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
-                                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                                      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                                    <svg
+                                      className="animate-spin w-3 h-3"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                    >
+                                      <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeOpacity="0.25"
+                                        strokeWidth="3"
+                                      />
+                                      <path
+                                        d="M22 12a10 10 0 0 0-10-10"
+                                        stroke="currentColor"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                      />
                                     </svg>
                                     Getting link…
                                   </>
                                 ) : (
                                   <>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="w-3 h-3"
+                                    >
                                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                       <polyline points="7 10 12 15 17 10" />
                                       <line x1="12" y1="15" x2="12" y2="3" />
@@ -332,18 +405,49 @@ export default function FileList() {
                               {/* Delete button */}
                               <button
                                 onClick={() => setConfirmDelete(file.file_id)}
-                                disabled={deleting === file.file_id || downloading === file.file_id}
+                                disabled={
+                                  deleting === file.file_id ||
+                                  downloading === file.file_id
+                                }
                                 className="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{ background: "none", border: "none", padding: 0 }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  padding: 0,
+                                }}
                                 title="Delete file"
                               >
                                 {deleting === file.file_id ? (
-                                  <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                                    <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                                  <svg
+                                    className="animate-spin w-3.5 h-3.5"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <circle
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeOpacity="0.25"
+                                      strokeWidth="3"
+                                    />
+                                    <path
+                                      d="M22 12a10 10 0 0 0-10-10"
+                                      stroke="currentColor"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
                                   </svg>
                                 ) : (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-3.5 h-3.5"
+                                  >
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
                                   </svg>

@@ -3,7 +3,13 @@ import type { DragEvent, ChangeEvent } from "react";
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB per part
 
-type DropState = "idle" | "hovering" | "done" | "uploading" | "success" | "error";
+type DropState =
+  | "idle"
+  | "hovering"
+  | "done"
+  | "uploading"
+  | "success"
+  | "error";
 
 interface UploadCtx {
   file_id: string;
@@ -20,7 +26,7 @@ function uploadChunk(
   url: string,
   data: Blob,
   onProgress: (loaded: number) => void,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -36,7 +42,8 @@ function uploadChunk(
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        const raw = xhr.getResponseHeader("ETag") ?? xhr.getResponseHeader("etag") ?? "";
+        const raw =
+          xhr.getResponseHeader("ETag") ?? xhr.getResponseHeader("etag") ?? "";
         resolve(raw.replace(/"/g, ""));
       } else {
         reject(new Error(`Chunk upload failed with status ${xhr.status}`));
@@ -100,10 +107,13 @@ export default function Dropzone() {
     abortRef.current?.abort();
     const ctx = ctxRef.current;
     if (ctx) {
-      fetch("http://localhost:8000/api/upload/abort", {
+      fetch("http://localhost:4406/api/upload/abort", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_id: ctx.file_id, upload_id: ctx.upload_id }),
+        body: JSON.stringify({
+          file_id: ctx.file_id,
+          upload_id: ctx.upload_id,
+        }),
       }).catch(() => {});
     }
     reset();
@@ -131,7 +141,7 @@ export default function Dropzone() {
         setSpeed(
           bps >= 1024 * 1024
             ? `${(bps / (1024 * 1024)).toFixed(1)} MB/s`
-            : `${(bps / 1024).toFixed(0)} KB/s`
+            : `${(bps / 1024).toFixed(0)} KB/s`,
         );
       }
     }
@@ -143,7 +153,10 @@ export default function Dropzone() {
       const initRes = await fetch("/api/upload/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, total_chunks: totalChunks }),
+        body: JSON.stringify({
+          filename: file.name,
+          total_chunks: totalChunks,
+        }),
         signal: controller.signal,
       });
       if (!initRes.ok) throw new Error(`Server error: ${initRes.status}`);
@@ -153,7 +166,9 @@ export default function Dropzone() {
 
       // 2. Upload chunks (up to 2 in parallel — higher values cause MinIO lock contention)
       const CONCURRENCY = 2;
-      const parts: { part_number: number; etag: string }[] = new Array(totalChunks);
+      const parts: { part_number: number; etag: string }[] = new Array(
+        totalChunks,
+      );
       let nextIndex = 0;
 
       async function uploadWorker() {
@@ -170,7 +185,7 @@ export default function Dropzone() {
               chunkLoaded[i] = loaded;
               updateProgress();
             },
-            controller.signal
+            controller.signal,
           );
 
           chunkLoaded[i] = chunk.size;
@@ -180,7 +195,10 @@ export default function Dropzone() {
       }
 
       await Promise.all(
-        Array.from({ length: Math.min(CONCURRENCY, totalChunks) }, uploadWorker)
+        Array.from(
+          { length: Math.min(CONCURRENCY, totalChunks) },
+          uploadWorker,
+        ),
       );
 
       // 3. Finish
@@ -201,7 +219,10 @@ export default function Dropzone() {
         fetch("/api/upload/abort", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file_id: ctx.file_id, upload_id: ctx.upload_id }),
+          body: JSON.stringify({
+            file_id: ctx.file_id,
+            upload_id: ctx.upload_id,
+          }),
         }).catch(() => {});
       }
 
@@ -224,7 +245,9 @@ export default function Dropzone() {
       style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e5e7eb" }}
     >
       <div className="w-full max-w-xl mx-auto">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">Upload a file</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-6">
+          Upload a file
+        </h2>
 
         <div
           className="relative flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed transition-colors"
@@ -234,17 +257,17 @@ export default function Dropzone() {
             borderColor: isHovering
               ? "#7c3aed"
               : isDone || isUploading || isSuccess
-              ? "#7c3aed"
-              : isError
-              ? "#fca5a5"
-              : "#d1d5db",
+                ? "#7c3aed"
+                : isError
+                  ? "#fca5a5"
+                  : "#d1d5db",
             backgroundColor: isHovering
               ? "#f5f3ff"
               : isDone || isUploading || isSuccess
-              ? "#f5f3ff"
-              : isError
-              ? "#fff7f7"
-              : "#fafafa",
+                ? "#f5f3ff"
+                : isError
+                  ? "#fff7f7"
+                  : "#fafafa",
           }}
           onMouseEnter={() => setState((s) => (s === "idle" ? "hovering" : s))}
           onMouseLeave={() => setState((s) => (s === "hovering" ? "idle" : s))}
@@ -253,7 +276,12 @@ export default function Dropzone() {
           onDrop={canInteract ? onDrop : undefined}
           onClick={() => canInteract && inputRef.current?.click()}
         >
-          <input ref={inputRef} type="file" className="hidden" onChange={onChange} />
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={onChange}
+          />
 
           {/* ── idle / hovering ── */}
           {canInteract && (
@@ -275,9 +303,13 @@ export default function Dropzone() {
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-700">
                   Drop a file here, or{" "}
-                  <span className="text-purple-700 underline underline-offset-2">browse</span>
+                  <span className="text-purple-700 underline underline-offset-2">
+                    browse
+                  </span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Any file type accepted</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Any file type accepted
+                </p>
               </div>
             </>
           )}
@@ -299,7 +331,9 @@ export default function Dropzone() {
                 <polyline points="14 2 14 8 20 8" />
               </svg>
               <div className="text-center">
-                <p className="text-sm font-semibold text-gray-900">{file?.name}</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {file?.name}
+                </p>
                 <p className="text-xs text-gray-400 mt-0.5">
                   {file ? formatSize(file.size) : ""}
                 </p>
@@ -307,7 +341,10 @@ export default function Dropzone() {
               <button
                 className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors"
                 style={{ background: "none", border: "none", padding: 0 }}
-                onClick={(e) => { e.stopPropagation(); reset(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  reset();
+                }}
               >
                 Remove
               </button>
@@ -390,7 +427,9 @@ export default function Dropzone() {
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-gray-900">Upload complete</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Upload complete
+                </p>
                 <p
                   className="text-xs text-gray-400 mt-0.5 truncate"
                   style={{ maxWidth: "280px" }}
@@ -432,7 +471,9 @@ export default function Dropzone() {
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-gray-900">Upload failed</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Upload failed
+                </p>
                 <p className="text-xs text-gray-400 mt-0.5">{errorMsg}</p>
               </div>
               <button
@@ -452,8 +493,12 @@ export default function Dropzone() {
             <button
               className="px-5 py-2.5 text-sm font-medium text-white rounded-md transition-colors"
               style={{ backgroundColor: "#6d28d9" }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#5b21b6")}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#6d28d9")}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = "#5b21b6")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = "#6d28d9")
+              }
               onClick={handleUpload}
             >
               Upload

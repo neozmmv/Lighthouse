@@ -11,7 +11,7 @@ services:
       dockerfile: Dockerfile
     container_name: lighthouse-backend
     ports:
-      - "8000:8000"
+      - "4406:8000" #4406
     networks:
       - lighthouse
     environment:

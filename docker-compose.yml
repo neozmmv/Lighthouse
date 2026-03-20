@@ -8,7 +8,7 @@ services:
     image: neozmmv/lighthouse-backend:latest
     container_name: lighthouse-backend
     ports:
-      - "127.0.0.1:8000:8000" # localhost only — needed for file management page
+      - "127.0.0.1:4406:8000" # localhost only — needed for file management page
     networks:
       - lighthouse
     environment:
