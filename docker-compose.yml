@@ -37,7 +37,7 @@ services:
       - lighthouse
     ports:
       - "80:80" # if port 80 is occupied, you can change the left side to another port, like "8080:80"
-      - "443:443"
+      #- "443:443" # HTTPS is optional, you can enable it with a proper Caddyfile and domain
       - "127.0.0.1:4405:4405" # files management, localhost only
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
