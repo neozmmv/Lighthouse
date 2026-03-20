@@ -64,7 +64,7 @@ export default function FileList() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch("http://localhost:4406/api/files")
+    fetch("/api/files")
       .then((r) => {
         if (!r.ok) throw new Error(`Server responded with ${r.status}`);
         return r.json();
@@ -83,10 +83,9 @@ export default function FileList() {
     setDeleting(fileId);
     setConfirmDelete(null);
     try {
-      const r = await fetch(
-        `http://localhost:4406/api/files/${encodeURIComponent(fileId)}`,
-        { method: "DELETE" },
-      );
+      const r = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
+        method: "DELETE",
+      });
       if (!r.ok) throw new Error(`Delete failed: ${r.status}`);
       setFiles((prev) => prev.filter((f) => f.file_id !== fileId));
     } catch (e) {
@@ -100,7 +99,7 @@ export default function FileList() {
     setDownloading(fileId);
     try {
       const r = await fetch(
-        `http://localhost:4406/api/files/${encodeURIComponent(fileId)}/download`,
+        `/api/files/${encodeURIComponent(fileId)}/download`,
       );
       if (!r.ok) throw new Error("Failed to get download link");
       const { url } = await r.json();
