@@ -51,6 +51,13 @@ func updateConfigFiles() error {
 		return fmt.Errorf("failed to update Caddyfile: %w", err)
 	}
 
+	c:= exec.Command("docker", "compose", "pull")
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	c.Dir = dir
+	if err := c.Run(); err != nil {
+		return fmt.Errorf("failed to pull latest Docker images: %w", err)
+	}
 	return nil
 }
 
