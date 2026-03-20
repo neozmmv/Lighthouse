@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 	Short: "A temporary file-receiving station on the Tor Network.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// skip docker checks for help and version commands
-		skipCommands := []string{"help", "version"}
+		skipCommands := []string{"help", "version", "update"}
 		for _, name := range skipCommands {
 			if cmd.Name() == name {
 				return nil
