@@ -72,6 +72,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lighthouse}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lighthouse_secret}
+      MINIO_API_REQUESTS_DEADLINE: "0"
     ports:
       - "127.0.0.1:9000:9000" # localhost only — presigned URLs from host
       - "127.0.0.1:9001:9001" # localhost only — minio console
