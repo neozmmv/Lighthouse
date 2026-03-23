@@ -10,22 +10,27 @@ import (
 var version = "dev"
 
 var rootCmd = &cobra.Command{
-	Use: "lighthouse",
+	Use:   "lighthouse",
 	Short: "A temporary file-receiving station on the Tor Network.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// skip docker checks for help and version commands
-		skipCommands := []string{"help", "version", "update"}
+		// Skip checks for commands that never need Docker or native runtime.
+		skipCommands := []string{"help", "version", "update", "up"}
 		for _, name := range skipCommands {
 			if cmd.Name() == name {
 				return nil
 			}
 		}
 
+		// Native mode is active — no Docker required.
+		if isNativeMode() {
+			return nil
+		}
+
 		if !hasDocker() {
-			return fmt.Errorf("Docker is not installed or not running.")
+			return fmt.Errorf("Docker is not installed or not running.\nRun 'lighthouse up --native' to use native mode without Docker.")
 		}
 		if !hasCompose() {
-			return fmt.Errorf("Docker Compose is not available. Please install Docker Compose v2 or later.")
+			return fmt.Errorf("Docker Compose is not available. Please install Docker Compose v2 or later.\nRun 'lighthouse up --native' to use native mode without Docker.")
 		}
 		return nil
 	},

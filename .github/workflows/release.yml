@@ -6,8 +6,35 @@ on:
       - "v*"
 
 jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Package dist as frontend.zip
+        run: zip -r frontend.zip dist/
+        working-directory: frontend
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-zip
+          path: frontend/frontend.zip
+
   build:
     runs-on: ubuntu-latest
+    needs: build-frontend
     permissions:
       contents: write
 
@@ -38,6 +65,11 @@ jobs:
         run: GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-windows-amd64.exe
         working-directory: cli
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-zip
+          path: frontend-artifact
+
       - name: Create new Release
         uses: softprops/action-gh-release@v2
         with:
@@ -48,6 +80,7 @@ jobs:
             cli/lighthouse-darwin-amd64
             cli/lighthouse-darwin-arm64
             cli/lighthouse-windows-amd64.exe
+            frontend-artifact/frontend.zip
             docker-compose.yml
             Caddyfile
             install.sh
