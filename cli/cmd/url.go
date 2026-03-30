@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-func getOnionUrl() (string, error) {
+// this is for the docker version.
+/* func getOnionUrl() (string, error) {
 	dir, err := getLighthouseDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get lighthouse directory: %w", err)
@@ -24,17 +23,17 @@ func getOnionUrl() (string, error) {
 	url := strings.TrimSpace(string(output))
 	return url, nil
 }
-
+*/
 
 var urlCmd = &cobra.Command{
-	Use: "url",
+	Use:   "url",
 	Short: "Get the .onion URL for sending files. (Lighthouse must be running!)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		running := isRunning()
 		if !running {
 			return fmt.Errorf("Lighthouse is not running. Please start it with 'lighthouse up' first.")
 		}
-		url, err := getOnionUrl()
+		url, err := getOnionAddress()
 		if err != nil {
 			return fmt.Errorf("failed to get .onion URL: %w", err)
 		}

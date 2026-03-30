@@ -9,9 +9,9 @@ import (
 
 func daemonSysProcAttr() *syscall.SysProcAttr {
 	return &syscall.SysProcAttr{
-		// CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS
-		// detaches the daemon from the parent terminal
-		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP | 0x00000008,
+		// DETACHED_PROCESS | CREATE_NO_WINDOW
+		// detaches the daemon from the parent terminal and hides console windows
+		CreationFlags: 0x00000008 | 0x08000000,
 	}
 }
 

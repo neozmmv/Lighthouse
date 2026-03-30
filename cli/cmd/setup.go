@@ -17,7 +17,7 @@ import (
 // IT WILL BE UPDATED MANUALLY IF NECESSARY, ON RELEASE NOTHING WILL CHANGE
 const (
 	// CURRENT VERSION OF TOR THAT WORKS WITH LIGHTHOUSE
-	torVersion       = "13.5.9"
+	torVersion       = "15.0.8"
 	torDownloadURL   = "https://dist.torproject.org/torbrowser/" + torVersion + "/tor-expert-bundle-windows-x86_64-" + torVersion + ".tar.gz"
 	minioDownloadURL = "https://dl.min.io/server/minio/release/windows-amd64/minio.exe"
 	caddyDownloadURL = "https://caddyserver.com/api/download?os=windows&arch=amd64&idempotency=1"

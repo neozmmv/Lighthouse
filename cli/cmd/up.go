@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -110,6 +111,9 @@ var daemonCmd = &cobra.Command{
 			"--address", "127.0.0.1:9000",
 			"--console-address", "127.0.0.1:9001",
 		)
+		minio.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW,
+		}
 		minio.Env = append(os.Environ(),
 			"MINIO_ROOT_USER="+cfg.MinioUser,
 			"MINIO_ROOT_PASSWORD="+cfg.MinioPass,
@@ -130,6 +134,9 @@ var daemonCmd = &cobra.Command{
 			"--config", filepath.Join(dir, "Caddyfile"),
 			"--adapter", "caddyfile",
 		)
+		caddy.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW,
+		}
 		caddy.Env = append(os.Environ(),
 			"LIGHTHOUSE_STATIC_DIR="+filepath.Join(dir, "frontend"),
 		)
@@ -148,6 +155,9 @@ var daemonCmd = &cobra.Command{
 			filepath.Join(binDir, "tor.exe"),
 			"-f", filepath.Join(dir, "tor", "torrc"),
 		)
+		tor.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW,
+		}
 		torStderr, err := tor.StderrPipe()
 		if err != nil {
 			minio.Process.Kill()
