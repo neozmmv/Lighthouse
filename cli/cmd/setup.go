@@ -179,7 +179,10 @@ func writeCaddyfile() error {
     }
     handle {
         root * {$LIGHTHOUSE_STATIC_DIR}
+        header *.js Content-Type application/javascript
+        header *.css Content-Type text/css
         file_server
+        try_files {path} /index.html
     }
 }
 
@@ -189,7 +192,10 @@ func writeCaddyfile() error {
     }
     handle {
         root * {$LIGHTHOUSE_STATIC_DIR}
+        header *.js Content-Type application/javascript
+        header *.css Content-Type text/css
         file_server
+        try_files {path} /index.html
     }
 }
 `
