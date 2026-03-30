@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"archive/tar"
-	"compress/bzip2"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -69,21 +69,27 @@ func downloadBinary(url, dest string) error {
 }
 
 func downloadTor(binDir string) error {
-	// tar.gz download (tor)
+	// download tor expert bundle tar.gz
 	tmpFile := filepath.Join(binDir, "tor.tar.gz")
 	if err := downloadBinary(torDownloadURL, tmpFile); err != nil {
 		return err
 	}
 	defer os.Remove(tmpFile)
 
-	// extract tor
 	f, err := os.Open(tmpFile)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	tr := tar.NewReader(bzip2.NewReader(f))
+	// tor expert bundle uses gzip
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return fmt.Errorf("failed to open gzip reader: %w", err)
+	}
+	defer gr.Close()
+
+	tr := tar.NewReader(gr)
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -186,6 +192,20 @@ func runSetup() error {
 
 	if err := writeCaddyfile(); err != nil {
 		return fmt.Errorf("failed to write Caddyfile: %w", err)
+	}
+
+	// generate MinIO credentials
+	minioPass, err := generateSecret(16)
+	if err != nil {
+		return fmt.Errorf("failed to generate MinIO password: %w", err)
+	}
+
+	cfg := &Config{
+		MinioUser: "lighthouse",
+		MinioPass: minioPass,
+	}
+	if err := saveConfig(cfg); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	// mark as initialized
