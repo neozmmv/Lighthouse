@@ -3,20 +3,23 @@ package cmd
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
+	"time"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-// MINIO AND CADDY ALREADY ARE THE LATEST VERSIONS.
-// TOR DOESN'T, SO WE DO A LITTLE WORKAROUND HERE
-// TO KEEP IT WORKING, I'LL HARDCODE A WORKING VERSION OF TOR
-// TO AVOID BREAKING THE APP IF SOMETHING CHANGES
-// IT WILL BE UPDATED MANUALLY IF NECESSARY, ON RELEASE NOTHING WILL CHANGE
+// MINIO AND CADDY ALREADY RESOLVE THE LATEST VERSION VIA THEIR DOWNLOAD URLS.
+// TOR DOESN'T, SO THE VERSION IS HARDCODED HERE AND UPDATED MANUALLY ON RELEASE.
 const (
-	// CURRENT VERSION OF TOR THAT WORKS WITH LIGHTHOUSE
 	torVersion       = "15.0.8"
 	torDownloadURL   = "https://dist.torproject.org/torbrowser/" + torVersion + "/tor-expert-bundle-windows-x86_64-" + torVersion + ".tar.gz"
 	minioDownloadURL = "https://dl.min.io/server/minio/release/windows-amd64/minio.exe"
@@ -179,6 +182,40 @@ func writeCaddyfile() error {
 	return os.WriteFile(filepath.Join(dir, "Caddyfile"), []byte(caddyfile), 0600)
 }
 
+func initMinIOBucket(cfg *Config) error {
+	client, err := minio.New("127.0.0.1:9000", &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.MinioUser, cfg.MinioPass, ""),
+		Secure: false,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create MinIO client: %w", err)
+	}
+
+	// wait for MinIO to be ready
+	for i := 0; i < 10; i++ {
+		_, err := client.ListBuckets(context.Background())
+		if err == nil {
+			break
+		}
+		if i == 9 {
+			return fmt.Errorf("MinIO did not become ready in time: %w", err)
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	exists, err := client.BucketExists(context.Background(), "lighthouse")
+	if err != nil {
+		return fmt.Errorf("failed to check bucket: %w", err)
+	}
+	if !exists {
+		if err := client.MakeBucket(context.Background(), "lighthouse", minio.MakeBucketOptions{}); err != nil {
+			return fmt.Errorf("failed to create bucket: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func runSetup() error {
 	fmt.Println("First run — setting up Lighthouse...")
 
@@ -208,11 +245,41 @@ func runSetup() error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	// mark as initialized
+	// start MinIO temporarily to create the bucket
+	fmt.Println("Initializing MinIO bucket...")
+	binDir, err := getBinDir()
+	if err != nil {
+		return err
+	}
 	dir, err := getLighthouseDir()
 	if err != nil {
 		return err
 	}
+
+	minioProc := exec.Command(
+		filepath.Join(binDir, "minio.exe"),
+		"server",
+		filepath.Join(dir, "data", "minio"),
+		"--address", "127.0.0.1:9000",
+		"--console-address", "127.0.0.1:9001",
+	)
+	minioProc.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	}
+	minioProc.Env = append(os.Environ(),
+		"MINIO_ROOT_USER="+cfg.MinioUser,
+		"MINIO_ROOT_PASSWORD="+cfg.MinioPass,
+	)
+	if err := minioProc.Start(); err != nil {
+		return fmt.Errorf("failed to start MinIO for setup: %w", err)
+	}
+	defer minioProc.Process.Kill()
+
+	if err := initMinIOBucket(cfg); err != nil {
+		return err
+	}
+
+	// mark as initialized
 	if err := os.WriteFile(filepath.Join(dir, "initialized"), []byte("1"), 0600); err != nil {
 		return fmt.Errorf("failed to mark as initialized: %w", err)
 	}
