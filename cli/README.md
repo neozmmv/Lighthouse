@@ -14,3 +14,7 @@ go build -o lighthouse
 
 GitHub Actions will build on new tag, like "v1.1.2"
 `git tag v1.1.2`, `git push origin v1.1.2`
+
+# IMPORTANT!
+
+`/backend-go` is the folder for the new Go backend. It must be compiled to `/cli/cmd`, to be injected on the CLI build!!

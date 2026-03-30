@@ -71,6 +71,20 @@ func downloadBinary(url, dest string) error {
 	return err
 }
 
+func extractBackend() error {
+	binDir, err := getBinDir()
+	if err != nil {
+		return err
+	}
+
+	dest := filepath.Join(binDir, "backend.exe")
+	if err := os.WriteFile(dest, backendBinary, 0755); err != nil {
+		return fmt.Errorf("failed to extract backend: %w", err)
+	}
+
+	return nil
+}
+
 func downloadTor(binDir string) error {
 	// download tor expert bundle tar.gz
 	tmpFile := filepath.Join(binDir, "tor.tar.gz")
@@ -221,6 +235,10 @@ func runSetup() error {
 
 	if err := downloadBinaries(); err != nil {
 		return err
+	}
+
+	if err := extractBackend(); err != nil {
+		return fmt.Errorf("failed to extract backend: %w", err)
 	}
 
 	if err := writeTorrc(); err != nil {

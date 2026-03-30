@@ -112,7 +112,7 @@ var daemonCmd = &cobra.Command{
 			"--console-address", "127.0.0.1:9001",
 		)
 		minio.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000, // CREATE_NO_WINDOW,
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 		}
 		minio.Env = append(os.Environ(),
 			"MINIO_ROOT_USER="+cfg.MinioUser,
@@ -127,6 +127,29 @@ var daemonCmd = &cobra.Command{
 		}
 		time.Sleep(2 * time.Second)
 
+		// start backend
+		backend := exec.Command(filepath.Join(binDir, "backend.exe"))
+		backend.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+		}
+		backend.Env = append(os.Environ(),
+			"MINIO_ROOT_USER="+cfg.MinioUser,
+			"MINIO_ROOT_PASSWORD="+cfg.MinioPass,
+			"MINIO_ENDPOINT=127.0.0.1:9000",
+			"MINIO_PUBLIC_ENDPOINT=127.0.0.1:9000",
+			"MINIO_LOCAL_ENDPOINT=127.0.0.1:9000",
+			"PORT=8000",
+		)
+		if err := backend.Start(); err != nil {
+			minio.Process.Kill()
+			return fmt.Errorf("failed to start backend: %w", err)
+		}
+		if err := assignToJob(job, backend.Process.Pid); err != nil {
+			minio.Process.Kill()
+			backend.Process.Kill()
+			return fmt.Errorf("failed to assign backend to job: %w", err)
+		}
+
 		// start Caddy
 		caddy := exec.Command(
 			filepath.Join(binDir, "caddy.exe"),
@@ -135,17 +158,19 @@ var daemonCmd = &cobra.Command{
 			"--adapter", "caddyfile",
 		)
 		caddy.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000, // CREATE_NO_WINDOW,
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 		}
 		caddy.Env = append(os.Environ(),
 			"LIGHTHOUSE_STATIC_DIR="+filepath.Join(dir, "frontend"),
 		)
 		if err := caddy.Start(); err != nil {
 			minio.Process.Kill()
+			backend.Process.Kill()
 			return fmt.Errorf("failed to start Caddy: %w", err)
 		}
 		if err := assignToJob(job, caddy.Process.Pid); err != nil {
 			minio.Process.Kill()
+			backend.Process.Kill()
 			caddy.Process.Kill()
 			return fmt.Errorf("failed to assign Caddy to job: %w", err)
 		}
@@ -156,21 +181,24 @@ var daemonCmd = &cobra.Command{
 			"-f", filepath.Join(dir, "tor", "torrc"),
 		)
 		tor.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000, // CREATE_NO_WINDOW,
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 		}
 		torStderr, err := tor.StderrPipe()
 		if err != nil {
 			minio.Process.Kill()
+			backend.Process.Kill()
 			caddy.Process.Kill()
 			return err
 		}
 		if err := tor.Start(); err != nil {
 			minio.Process.Kill()
+			backend.Process.Kill()
 			caddy.Process.Kill()
 			return fmt.Errorf("failed to start Tor: %w", err)
 		}
 		if err := assignToJob(job, tor.Process.Pid); err != nil {
 			minio.Process.Kill()
+			backend.Process.Kill()
 			caddy.Process.Kill()
 			tor.Process.Kill()
 			return fmt.Errorf("failed to assign Tor to job: %w", err)
@@ -185,14 +213,16 @@ var daemonCmd = &cobra.Command{
 		}()
 
 		// wait for any process to exit
-		done := make(chan error, 3)
+		done := make(chan error, 4)
 		go func() { done <- minio.Wait() }()
+		go func() { done <- backend.Wait() }()
 		go func() { done <- caddy.Wait() }()
 		go func() { done <- tor.Wait() }()
 
 		// if any process dies, kill the others and clean up
 		<-done
 		minio.Process.Kill()
+		backend.Process.Kill()
 		caddy.Process.Kill()
 		tor.Process.Kill()
 		clearPid()
