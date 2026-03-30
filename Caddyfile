@@ -2,38 +2,34 @@
     handle /api/files* {
         respond 404
     }
-
     handle /api/* {
-        reverse_proxy backend:8000
+        reverse_proxy 127.0.0.1:8000
     }
-
     handle /files* {
         respond 403
     }
-
-    # MinIO bucket proxy — presigned upload/download URLs use the onion address on port 80
     handle /lighthouse/* {
-    reverse_proxy minio:9000 {
-        header_up Host {host}
-        transport http {
-            read_timeout 0
-            write_timeout 0
-            response_header_timeout 0
+        reverse_proxy 127.0.0.1:9000 {
+            header_up Host {host}
+            transport http {
+                read_timeout 0
+                write_timeout 0
+                response_header_timeout 0
+            }
         }
     }
-}
-
     handle {
-        reverse_proxy frontend:5173
+        root * {$LIGHTHOUSE_STATIC_DIR}
+        file_server
     }
 }
 
-# files management — only reachable from the host machine
 :4405 {
     handle /api/* {
-        reverse_proxy backend:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle {
-        reverse_proxy frontend:5173
+        root * {$LIGHTHOUSE_STATIC_DIR}
+        file_server
     }
 }
