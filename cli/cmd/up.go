@@ -96,6 +96,12 @@ var daemonCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
+		// create job object — kills all children when daemon exits
+		job, err := createJobObject()
+		if err != nil {
+			return fmt.Errorf("failed to create job object: %w", err)
+		}
+
 		// start MinIO
 		minio := exec.Command(
 			filepath.Join(binDir, "minio.exe"),
@@ -110,6 +116,10 @@ var daemonCmd = &cobra.Command{
 		)
 		if err := minio.Start(); err != nil {
 			return fmt.Errorf("failed to start MinIO: %w", err)
+		}
+		if err := assignToJob(job, minio.Process.Pid); err != nil {
+			minio.Process.Kill()
+			return fmt.Errorf("failed to assign MinIO to job: %w", err)
 		}
 		time.Sleep(2 * time.Second)
 
@@ -127,6 +137,11 @@ var daemonCmd = &cobra.Command{
 			minio.Process.Kill()
 			return fmt.Errorf("failed to start Caddy: %w", err)
 		}
+		if err := assignToJob(job, caddy.Process.Pid); err != nil {
+			minio.Process.Kill()
+			caddy.Process.Kill()
+			return fmt.Errorf("failed to assign Caddy to job: %w", err)
+		}
 
 		// start Tor
 		tor := exec.Command(
@@ -143,6 +158,12 @@ var daemonCmd = &cobra.Command{
 			minio.Process.Kill()
 			caddy.Process.Kill()
 			return fmt.Errorf("failed to start Tor: %w", err)
+		}
+		if err := assignToJob(job, tor.Process.Pid); err != nil {
+			minio.Process.Kill()
+			caddy.Process.Kill()
+			tor.Process.Kill()
+			return fmt.Errorf("failed to assign Tor to job: %w", err)
 		}
 
 		// drain Tor stderr to prevent the pipe from blocking

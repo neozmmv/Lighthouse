@@ -3,32 +3,53 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var downCmd = &cobra.Command{
-	Use: "down",
+	Use:   "down",
 	Short: "Stop Lighthouse",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !isRunning() {
+			fmt.Println("Lighthouse is already down.")
+			return nil
+		}
+
 		dir, err := getLighthouseDir()
 		if err != nil {
 			return fmt.Errorf("failed to get lighthouse directory: %w", err)
 		}
 
-		running := isRunning()
-		if !running {
-			fmt.Println("Lighthouse is already down.")
-			return nil
+		// read daemon PID from file
+		data, err := os.ReadFile(dir + "\\lighthouse.pid")
+		if err != nil {
+			return fmt.Errorf("failed to read PID file: %w", err)
 		}
 
-		fmt.Println("Stopping Lighthouse...")
-		c := exec.Command("docker", "compose", "down")
-		c.Stderr = os.Stderr
-		c.Stdout = os.Stdout
-		c.Dir = dir
-		return c.Run()
+		pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+		if err != nil {
+			return fmt.Errorf("invalid PID in file: %w", err)
+		}
+
+		// find and kill the daemon process
+		p, err := os.FindProcess(pid)
+		if err != nil {
+			return fmt.Errorf("failed to find process %d: %w", pid, err)
+		}
+
+		if err := p.Kill(); err != nil {
+			return fmt.Errorf("failed to kill daemon process: %w", err)
+		}
+
+		if err := clearPid(); err != nil {
+			return fmt.Errorf("failed to clear PID file: %w", err)
+		}
+
+		fmt.Println("Lighthouse stopped.")
+		return nil
 	},
 }
 
