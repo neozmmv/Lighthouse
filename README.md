@@ -1,8 +1,11 @@
 <img height=144px src="./frontend/public/Lighthouse.svg" alt="Lighthouse Logo"/>
 
-# Lighthouse
+# Lighthouse — Windows Native
 
 A temporary file-receiving station hosted on the Tor network. Run it, share your `.onion` address, receive files, shut it down.
+
+> This is the **Windows native** branch. No Docker required.
+> For the Docker version (Linux/macOS/Windows), see the [master branch](https://github.com/neozmmv/Lighthouse/tree/master).
 
 ## Concept
 
@@ -12,8 +15,9 @@ Lighthouse removes the usual friction from receiving files from someone:
 - No cloud storage accounts
 - No server setup
 - No file size limits
+- No Docker
 
-You spin it up, Tor creates a hidden service and gives you an `.onion` address. You share that address with whoever needs to send you files. They open it in Tor Browser, upload the file, you download it. Done. Shut it down.
+You run the installer, Lighthouse downloads and configures everything automatically. Tor creates a hidden service and gives you an `.onion` address. You share that address with whoever needs to send you files. They open it in Tor Browser, upload the file, you download it. Done. Shut it down.
 
 ## How it works
 
@@ -23,113 +27,135 @@ Sender (Tor Browser) --> .onion address --> Tor network --> Lighthouse (your mac
 
 Tor's hidden service acts as the networking layer, so your machine is reachable without a public IP or open ports.
 
+On first run, Lighthouse automatically downloads and configures:
+
+- **Tor** — creates the hidden service and exposes your `.onion` address
+- **MinIO** — stores received files locally
+- **Caddy** — reverse proxy routing traffic between services
+
+Everything runs natively as background processes. No Docker, no virtual machines.
+
 ## Stack
 
 - **Frontend** — React + TypeScript (Vite, TanStack Router, Tailwind CSS)
-- **Backend** — Python (FastAPI), proxied at `/api/`
+- **Backend** — Go (Gin)
+- **Storage** — MinIO
+- **Proxy** — Caddy
 - **Transport** — Tor hidden service
+- **CLI** — Go (Cobra)
 
 ## Installation
 
-### Linux / macOS
+Download `LighthouseSetup.exe` from the [releases page](https://github.com/neozmmv/Lighthouse/releases/latest) and run it.
 
-```bash
-curl -fsSL https://github.com/neozmmv/Lighthouse/releases/latest/download/install.sh | sh
-```
+The installer will:
 
-### Windows
-
-Download the latest `lighthouse-windows-amd64.exe` from the [releases page](https://github.com/neozmmv/Lighthouse/releases/latest), rename it to `lighthouse.exe` and move it to a folder in your PATH (e.g. `C:\Windows\System32`), or add its folder to PATH via **System Properties → Environment Variables**.
-
-### Manual (any platform)
-
-Download the binary for your platform from the [releases page](https://github.com/neozmmv/Lighthouse/releases/latest), make it executable and move it to your PATH:
-
-```bash
-chmod +x lighthouse-linux-amd64
-sudo mv lighthouse-linux-amd64 /usr/local/bin/lighthouse
-```
+1. Copy `lighthouse.exe` to `%LOCALAPPDATA%\Lighthouse\`
+2. Add it to your PATH
+3. Start Lighthouse automatically
 
 ## Usage
 
-> Prerequisites: Docker and Docker Compose.
-
 **Start**
 
-```bash
+```
 lighthouse up
 ```
 
+On first run this will download Tor, MinIO and Caddy (~50MB), configure everything and start all services automatically.
+
 **Get your `.onion` address**
 
-```bash
+```
 lighthouse url
 ```
 
-**Share** the `.onion` address with the sender and wait for the file to arrive.
+Share this address with whoever needs to send you files. They open it in Tor Browser and upload.
 
-Access **localhost** on your browser to be able to go to the `/files` route and download your file.
+**Manage files (host interface)**
 
-You can access the **MinIO** Panel on `http://localhost:9001`.
+Open `http://localhost:4405` in your browser to view and download received files.
 
-By default, the access is **"lighthouse"** and password **"lighthouse_secret"**. You can change these values by creating a `.env` file on the project root with these values:
+**List files via CLI**
 
 ```
-MINIO_ROOT_USER=yourUser
-MINIO_ROOT_PASSWORD=yourPassword
+lighthouse files
 ```
 
-This route is inaccessible outside your localhost, so only you have access to your files.
+**Download a file via CLI**
+
+```
+lighthouse download 0
+lighthouse download 0 --here
+lighthouse download 0 --remove
+```
+
+- `--here` saves to the current directory instead of `~/Downloads`
+- `--remove` deletes the file from the bucket after downloading
+
+**Check status**
+
+```
+lighthouse status
+```
+
+**Show MinIO credentials**
+
+```
+lighthouse config
+```
 
 **Stop**
 
-```bash
+```
 lighthouse down
 ```
 
-## Uninstall
+**Update**
 
-```bash
-curl -fsSL https://github.com/neozmmv/Lighthouse/releases/latest/download/uninstall.sh | sh
+```
+lighthouse update
+```
+
+Downloads and runs the latest installer automatically.
+
+## Data storage
+
+All data is stored in `%APPDATA%\Lighthouse\`:
+
+```
+%APPDATA%\Lighthouse\
+├── config.json
+├── initialized
+├── Caddyfile
+├── bin\
+├── tor\
+├── data\minio\
+└── frontend\
 ```
 
 ## Project structure
 
 ```
 lighthouse/
-├── backend/      # Python API
-├── cli/          # Go CLI
-└── frontend/     # React app
+├── backend-go\
+├── cli\
+└── frontend\
 ```
 
-## For development
+## Building from source
 
-For getting development dependencies:
+Prerequisites: Go 1.23+, Node.js 20+
 
-```bash
-sudo docker compose -f docker-compose.dev.yml up -d
-```
-
-or
-
-```bash
-sudo docker compose -f docker-compose.dev.yml up -d --build
-```
-
-Front-end:
-
-```bash
+```powershell
 cd frontend
 npm install
-npm run dev
-```
+npm run build
+Copy-Item -Recurse dist ..\cli\cmd\frontend
 
-Back-end:
+cd ..\backend-go
+go build -o ..\cli\cmd\backend.exe .
 
-```bash
-cd backend/app
-python -m venv env
-source ./env/bin/activate
-pip install -r requirements.txt
-fastapi dev main.py --host 0.0.0.0
+cd ..\cli
+go build -o lighthouse.exe .
 ```
