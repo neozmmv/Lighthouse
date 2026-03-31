@@ -60,3 +60,5 @@ jobs:
           name: "Lighthouse ${{ github.ref_name }}"
           files: |
             LighthouseSetup.exe
+            docker-compose.yml
+            Caddyfile
