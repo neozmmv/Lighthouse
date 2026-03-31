@@ -29,10 +29,11 @@ jobs:
         working-directory: frontend
 
       - name: Copy frontend to CLI embed dir
-        run: cp -r frontend/dist cli/cmd/frontend
+        shell: pwsh
+        run: Copy-Item -Recurse frontend/dist cli/cmd/frontend
 
       - name: Build backend
-        run: go build -o cli/cmd/backend.exe .
+        run: go build -o ../cli/cmd/backend.exe .
         working-directory: backend-go
 
       - name: Build lighthouse.exe
@@ -40,9 +41,10 @@ jobs:
         working-directory: cli
 
       - name: Install NSIS
-        run: choco install nsis -y
+        run: choco install nsis --yes
 
       - name: Update version in installer
+        shell: pwsh
         run: |
           (Get-Content installer.nsi) -replace '!define APP_VERSION ".*"', '!define APP_VERSION "${{ github.ref_name }}"' | Set-Content installer.nsi
 
