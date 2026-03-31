@@ -1,0 +1,57 @@
+name: Release Windows
+
+on:
+  push:
+    tags:
+      - "v*-win"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        run: |
+          npm install
+          npm run build
+        working-directory: frontend
+
+      - name: Copy frontend to CLI embed dir
+        run: cp -r frontend/dist cli/cmd/frontend
+
+      - name: Build backend
+        run: go build -o cli/cmd/backend.exe .
+        working-directory: backend-go
+
+      - name: Build lighthouse.exe
+        run: go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse.exe .
+        working-directory: cli
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Update version in installer
+        run: |
+          (Get-Content installer.nsi) -replace '!define APP_VERSION ".*"', '!define APP_VERSION "${{ github.ref_name }}"' | Set-Content installer.nsi
+
+      - name: Build installer
+        run: makensis installer.nsi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Lighthouse ${{ github.ref_name }}"
+          files: |
+            LighthouseSetup.exe
