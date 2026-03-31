@@ -6,10 +6,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -69,6 +71,44 @@ func downloadBinary(url, dest string) error {
 
 	_, err = io.Copy(f, resp.Body)
 	return err
+}
+
+func extractFrontend() error {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return err
+	}
+
+	frontendDir := filepath.Join(dir, "frontend")
+	if err := os.MkdirAll(frontendDir, 0755); err != nil {
+		return err
+	}
+
+	// walk embedded frontend files and extract them
+	return fs.WalkDir(frontendFiles, "frontend", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// strip the "frontend/" prefix to get the relative path
+		relPath := strings.TrimPrefix(path, "frontend/")
+		if relPath == "" {
+			return nil
+		}
+
+		destPath := filepath.Join(frontendDir, filepath.FromSlash(relPath))
+
+		if d.IsDir() {
+			return os.MkdirAll(destPath, 0755)
+		}
+
+		data, err := frontendFiles.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		return os.WriteFile(destPath, data, 0644)
+	})
 }
 
 func extractBackend() error {
@@ -245,6 +285,10 @@ func runSetup() error {
 
 	if err := extractBackend(); err != nil {
 		return fmt.Errorf("failed to extract backend: %w", err)
+	}
+
+	if err := extractFrontend(); err != nil {
+		return fmt.Errorf("failed to extract frontend: %w", err)
 	}
 
 	if err := writeTorrc(); err != nil {

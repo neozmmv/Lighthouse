@@ -2,3 +2,4 @@ lighthouse
 lighthouse.exe*
 backend
 backend.exe*
+frontend/
