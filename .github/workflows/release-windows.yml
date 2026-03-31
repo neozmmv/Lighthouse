@@ -43,14 +43,16 @@ jobs:
       - name: Install NSIS
         run: choco install nsis --yes
 
-      - name: Build installer
-        shell: pwsh
-        run: & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
-
       - name: Update version in installer
         shell: pwsh
         run: |
           (Get-Content installer.nsi) -replace '!define APP_VERSION ".*"', '!define APP_VERSION "${{ github.ref_name }}"' | Set-Content installer.nsi
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          & $nsis installer.nsi
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
