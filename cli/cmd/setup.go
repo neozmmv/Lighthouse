@@ -143,7 +143,7 @@ func writeTorrc() error {
 
 	torrc := fmt.Sprintf(`DataDirectory %s
 HiddenServiceDir %s
-HiddenServicePort 80 127.0.0.1:80
+HiddenServicePort 80 127.0.0.1:8080
 SocksPort 9050
 Log notice stderr
 `, torDir, filepath.Join(torDir, "hidden_service"))
@@ -157,7 +157,7 @@ func writeCaddyfile() error {
 		return err
 	}
 
-	caddyfile := `:80 {
+	caddyfile := `:8080 {
     handle /api/files* {
         respond 404
     }

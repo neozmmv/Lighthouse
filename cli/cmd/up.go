@@ -74,6 +74,7 @@ var upCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Lighthouse is running at: %s\n", onion)
+		fmt.Printf("Access on host: http://localhost:8080\n")
 		return nil
 	},
 }
@@ -127,7 +128,62 @@ var daemonCmd = &cobra.Command{
 		}
 		time.Sleep(2 * time.Second)
 
-		// start backend
+		// start Tor before the backend so we can read the .onion address
+		tor := exec.Command(
+			filepath.Join(binDir, "tor.exe"),
+			"-f", filepath.Join(dir, "tor", "torrc"),
+		)
+		tor.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+		}
+		torStderr, err := tor.StderrPipe()
+		if err != nil {
+			minio.Process.Kill()
+			return err
+		}
+		if err := tor.Start(); err != nil {
+			minio.Process.Kill()
+			return fmt.Errorf("failed to start Tor: %w", err)
+		}
+		if err := assignToJob(job, tor.Process.Pid); err != nil {
+			minio.Process.Kill()
+			tor.Process.Kill()
+			return fmt.Errorf("failed to assign Tor to job: %w", err)
+		}
+
+		// wait for Tor to bootstrap by watching stderr
+		torReady := make(chan struct{})
+		go func() {
+			scanner := bufio.NewScanner(torStderr)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.Contains(line, "Bootstrapped 100%") {
+					close(torReady)
+					// drain remaining output
+					for scanner.Scan() {
+					}
+					return
+				}
+			}
+		}()
+
+		select {
+		case <-torReady:
+		case <-time.After(60 * time.Second):
+			minio.Process.Kill()
+			tor.Process.Kill()
+			return fmt.Errorf("tor bootstrap timed out")
+		}
+
+		// read the .onion address — Tor has bootstrapped at this point
+		onion, err := getOnionAddress()
+		if err != nil {
+			minio.Process.Kill()
+			tor.Process.Kill()
+			return fmt.Errorf("failed to read onion address: %w", err)
+		}
+
+		// start backend with the .onion address as the public MinIO endpoint
 		backend := exec.Command(filepath.Join(binDir, "backend.exe"))
 		backend.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
@@ -136,16 +192,18 @@ var daemonCmd = &cobra.Command{
 			"MINIO_ROOT_USER="+cfg.MinioUser,
 			"MINIO_ROOT_PASSWORD="+cfg.MinioPass,
 			"MINIO_ENDPOINT=127.0.0.1:9000",
-			"MINIO_PUBLIC_ENDPOINT=127.0.0.1:9000",
+			"MINIO_PUBLIC_ENDPOINT="+onion, // presigned upload URLs point to .onion
 			"MINIO_LOCAL_ENDPOINT=127.0.0.1:9000",
 			"PORT=8000",
 		)
 		if err := backend.Start(); err != nil {
 			minio.Process.Kill()
+			tor.Process.Kill()
 			return fmt.Errorf("failed to start backend: %w", err)
 		}
 		if err := assignToJob(job, backend.Process.Pid); err != nil {
 			minio.Process.Kill()
+			tor.Process.Kill()
 			backend.Process.Kill()
 			return fmt.Errorf("failed to assign backend to job: %w", err)
 		}
@@ -165,66 +223,31 @@ var daemonCmd = &cobra.Command{
 		)
 		if err := caddy.Start(); err != nil {
 			minio.Process.Kill()
+			tor.Process.Kill()
 			backend.Process.Kill()
 			return fmt.Errorf("failed to start Caddy: %w", err)
 		}
 		if err := assignToJob(job, caddy.Process.Pid); err != nil {
 			minio.Process.Kill()
+			tor.Process.Kill()
 			backend.Process.Kill()
 			caddy.Process.Kill()
 			return fmt.Errorf("failed to assign Caddy to job: %w", err)
 		}
 
-		// start Tor
-		tor := exec.Command(
-			filepath.Join(binDir, "tor.exe"),
-			"-f", filepath.Join(dir, "tor", "torrc"),
-		)
-		tor.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
-		}
-		torStderr, err := tor.StderrPipe()
-		if err != nil {
-			minio.Process.Kill()
-			backend.Process.Kill()
-			caddy.Process.Kill()
-			return err
-		}
-		if err := tor.Start(); err != nil {
-			minio.Process.Kill()
-			backend.Process.Kill()
-			caddy.Process.Kill()
-			return fmt.Errorf("failed to start Tor: %w", err)
-		}
-		if err := assignToJob(job, tor.Process.Pid); err != nil {
-			minio.Process.Kill()
-			backend.Process.Kill()
-			caddy.Process.Kill()
-			tor.Process.Kill()
-			return fmt.Errorf("failed to assign Tor to job: %w", err)
-		}
-
-		// drain Tor stderr to prevent the pipe from blocking
-		go func() {
-			scanner := bufio.NewScanner(torStderr)
-			for scanner.Scan() {
-				_ = strings.Contains(scanner.Text(), "Bootstrapped")
-			}
-		}()
-
 		// wait for any process to exit
 		done := make(chan error, 4)
 		go func() { done <- minio.Wait() }()
+		go func() { done <- tor.Wait() }()
 		go func() { done <- backend.Wait() }()
 		go func() { done <- caddy.Wait() }()
-		go func() { done <- tor.Wait() }()
 
 		// if any process dies, kill the others and clean up
 		<-done
 		minio.Process.Kill()
+		tor.Process.Kill()
 		backend.Process.Kill()
 		caddy.Process.Kill()
-		tor.Process.Kill()
 		clearPid()
 
 		return nil

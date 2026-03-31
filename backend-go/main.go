@@ -17,43 +17,37 @@ import (
 const bucket = "lighthouse"
 
 type server struct {
-	s3       *minio.Client // internal — all S3 operations
-	s3Public *minio.Client // public — presigned upload URLs for Tor users
-	s3Local  *minio.Client // local — presigned download URLs for the host
+	s3      *minio.Client // internal — all S3 operations
+	s3Local *minio.Client // local — presigned download URLs for the host
 }
 
 func newServer() (*server, error) {
 	minioEndpoint := getEnv("MINIO_ENDPOINT", "127.0.0.1:9000")
-	minioPublicEndpoint := getEnv("MINIO_PUBLIC_ENDPOINT", "127.0.0.1:9000")
 	minioLocalEndpoint := getEnv("MINIO_LOCAL_ENDPOINT", "127.0.0.1:9000")
 	minioUser := getEnv("MINIO_ROOT_USER", "lighthouse")
 	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse")
 
 	s3, err := minio.New(minioEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(minioUser, minioPass, ""),
-		Secure: false,
+		Creds:        credentials.NewStaticV4(minioUser, minioPass, ""),
+		Secure:       false,
+		Region:       "us-east-1",
+		BucketLookup: minio.BucketLookupPath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create S3 client: %w", err)
 	}
 
-	s3Public, err := minio.New(minioPublicEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(minioUser, minioPass, ""),
-		Secure: false,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 public client: %w", err)
-	}
-
 	s3Local, err := minio.New(minioLocalEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(minioUser, minioPass, ""),
-		Secure: false,
+		Creds:        credentials.NewStaticV4(minioUser, minioPass, ""),
+		Secure:       false,
+		Region:       "us-east-1",
+		BucketLookup: minio.BucketLookupPath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create S3 local client: %w", err)
 	}
 
-	return &server{s3: s3, s3Public: s3Public, s3Local: s3Local}, nil
+	return &server{s3: s3, s3Local: s3Local}, nil
 }
 
 // --- request/response types ---
@@ -97,7 +91,6 @@ func (s *server) uploadInit(c *gin.Context) {
 
 	fileID := fmt.Sprintf("%s-%s", uuid.New().String(), body.Filename)
 
-	// use Core client to access low-level multipart upload API
 	core := minio.Core{Client: s.s3}
 	uploadID, err := core.NewMultipartUpload(c.Request.Context(), bucket, fileID, minio.PutObjectOptions{
 		UserMetadata: map[string]string{"filename": body.Filename},
@@ -107,9 +100,26 @@ func (s *server) uploadInit(c *gin.Context) {
 		return
 	}
 
+	// create a temporary client pointing to the public .onion endpoint for
+	// presigning only — Presign() computes the signature locally, no connection is made
+	publicEndpoint := getEnv("MINIO_PUBLIC_ENDPOINT", "127.0.0.1:9000")
+	minioUser := getEnv("MINIO_ROOT_USER", "lighthouse")
+	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse")
+
+	s3Public, err := minio.New(publicEndpoint, &minio.Options{
+		Creds:        credentials.NewStaticV4(minioUser, minioPass, ""),
+		Secure:       false,
+		Region:       "us-east-1",
+		BucketLookup: minio.BucketLookupPath,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create public client: %s", err)})
+		return
+	}
+
 	var urls []presignedURL
 	for i := 1; i <= body.TotalChunks; i++ {
-		url, err := s.s3Public.Presign(c.Request.Context(), http.MethodPut, bucket, fileID, 2*time.Hour, map[string][]string{
+		url, err := s3Public.Presign(c.Request.Context(), http.MethodPut, bucket, fileID, 2*time.Hour, map[string][]string{
 			"uploadId":   {uploadID},
 			"partNumber": {fmt.Sprintf("%d", i)},
 		})
@@ -142,7 +152,6 @@ func (s *server) uploadFinish(c *gin.Context) {
 		})
 	}
 
-	// use Core client to access low-level multipart upload API
 	core := minio.Core{Client: s.s3}
 	if _, err := core.CompleteMultipartUpload(c.Request.Context(), bucket, body.FileID, body.UploadID, parts, minio.PutObjectOptions{}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to complete multipart upload: %s", err)})
@@ -159,7 +168,6 @@ func (s *server) uploadAbort(c *gin.Context) {
 		return
 	}
 
-	// use Core client to access low-level multipart upload API
 	core := minio.Core{Client: s.s3}
 	if err := core.AbortMultipartUpload(c.Request.Context(), bucket, body.FileID, body.UploadID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to abort multipart upload: %s", err)})
@@ -212,7 +220,6 @@ func (s *server) listFiles(c *gin.Context) {
 
 func (s *server) deleteFile(c *gin.Context) {
 	fileID := c.Param("file_id")
-	// gin wildcard params include the leading slash
 	fileID = strings.TrimPrefix(fileID, "/")
 
 	if err := s.s3.RemoveObject(c.Request.Context(), bucket, fileID, minio.RemoveObjectOptions{}); err != nil {
