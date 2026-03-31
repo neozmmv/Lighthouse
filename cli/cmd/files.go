@@ -28,6 +28,11 @@ func getFiles() ([]FileInfo, error) {
 		return nil, err
 	}
 
+	if len(files) == 0 {
+		fmt.Println("No files found in your Lighthouse bucket.")
+		return files, nil
+	}
+
 	for i, f := range files {
 		var size int64
 		if f.Size >= 1024*1024 {
