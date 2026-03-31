@@ -233,6 +233,7 @@ func (s *server) deleteFile(c *gin.Context) {
 func (s *server) downloadFile(c *gin.Context) {
 	fileID := c.Param("file_id")
 	fileID = strings.TrimPrefix(fileID, "/")
+	fileID = strings.TrimSuffix(fileID, "/download")
 
 	stat, err := s.s3.StatObject(c.Request.Context(), bucket, fileID, minio.StatObjectOptions{})
 	if err != nil {
