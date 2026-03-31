@@ -9,14 +9,14 @@ import (
 )
 
 type FileInfo struct {
-    FileId     string `json:"file_id"`
-    Filename   string `json:"filename"`
-    Size       int64  `json:"size"`
-    UploadedAt string `json:"uploaded_at"`
+	FileId     string `json:"file_id"`
+	Filename   string `json:"filename"`
+	Size       int64  `json:"size"`
+	UploadedAt string `json:"uploaded_at"`
 }
 
 func getFiles() ([]FileInfo, error) {
-	resp, err := http.Get("http://localhost:4406/api/files")
+	resp, err := http.Get("http://localhost:8000/api/files")
 	if err != nil {
 		fmt.Println("Error fetching files:", err)
 		return nil, err
@@ -25,11 +25,11 @@ func getFiles() ([]FileInfo, error) {
 
 	var files []FileInfo
 	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
-    	return nil, err
+		return nil, err
 	}
+
 	for i, f := range files {
 		var size int64
-		// prints file size according to size in MB, KB or B
 		if f.Size >= 1024*1024 {
 			size = f.Size / (1024 * 1024)
 			fmt.Printf("[%d] %s (%dMB)\n", i, f.Filename, size)
@@ -45,7 +45,7 @@ func getFiles() ([]FileInfo, error) {
 }
 
 var filesCmd = &cobra.Command{
-	Use: "files",
+	Use:   "files",
 	Short: "Shows the files in your Lighthouse bucket.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !isRunning() {
