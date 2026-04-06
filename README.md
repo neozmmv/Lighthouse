@@ -65,6 +65,12 @@ lighthouse up
 
 On first run, Lighthouse sets itself up automatically — no configuration needed.
 
+If port 80 is already in use, specify a different one:
+
+```bash
+lighthouse up --port 8080
+```
+
 ### Get your `.onion` address
 
 ```bash

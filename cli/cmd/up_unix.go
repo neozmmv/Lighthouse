@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var port string
+
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start Lighthouse",
@@ -29,14 +31,17 @@ var upCmd = &cobra.Command{
 		}
 
 		fmt.Println("Starting Lighthouse...")
+		fmt.Printf("Access on http://localhost:%s\n", port)
 		c := exec.Command("docker", "compose", "up", "-d")
 		c.Dir = dir
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
+		c.Env = append(os.Environ(), "LIGHTHOUSE_PORT="+port)
 		return c.Run()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(upCmd)
+	upCmd.Flags().StringVar(&port, "port", "80", "host port for the web interface")
 }
