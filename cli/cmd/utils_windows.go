@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const backendBaseURL = "http://localhost:8000"
+
 // gets directory for lighthouse (appdata/lighthouse)
 func getLighthouseDir() (string, error) {
 	appData := os.Getenv("APPDATA")

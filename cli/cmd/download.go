@@ -17,7 +17,7 @@ var here bool
 var remove bool
 
 func downloadFile(f FileInfo, destDir string) error {
-	apiURL := fmt.Sprintf("http://localhost:8000/api/files/%s/download", f.FileId)
+	apiURL := fmt.Sprintf("%s/api/files/%s/download", backendBaseURL, f.FileId)
 
 	resp, err := http.Get(apiURL)
 	if err != nil {
@@ -65,7 +65,7 @@ func downloadFile(f FileInfo, destDir string) error {
 }
 
 func deleteFile(fileId string) error {
-	apiURL := fmt.Sprintf("http://localhost:8000/api/files/%s", url.PathEscape(fileId))
+	apiURL := fmt.Sprintf("%s/api/files/%s", backendBaseURL, url.PathEscape(fileId))
 
 	req, err := http.NewRequest(http.MethodDelete, apiURL, nil)
 	if err != nil {

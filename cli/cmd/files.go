@@ -16,7 +16,7 @@ type FileInfo struct {
 }
 
 func getFiles() ([]FileInfo, error) {
-	resp, err := http.Get("http://localhost:8000/api/files")
+	resp, err := http.Get(backendBaseURL + "/api/files")
 	if err != nil {
 		fmt.Println("Error fetching files:", err)
 		return nil, err

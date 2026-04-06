@@ -35,10 +35,6 @@ jobs:
         run: GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-arm64
         working-directory: cli
 
-      - name: Build Windows
-        run: GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-windows-amd64.exe
-        working-directory: cli
-
       - name: Create new Release
         uses: softprops/action-gh-release@v2
         with:
@@ -48,7 +44,6 @@ jobs:
             cli/lighthouse-linux-arm64
             cli/lighthouse-darwin-amd64
             cli/lighthouse-darwin-arm64
-            cli/lighthouse-windows-amd64.exe
             docker-compose.yml
             Caddyfile
             install.sh

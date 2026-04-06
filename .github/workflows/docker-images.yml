@@ -40,7 +40,7 @@ jobs:
       - name: Backend - Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/app
+          context: ./backend-go
           push: true
           platforms: ${{ matrix.platform }}
           tags: neozmmv/lighthouse-backend:${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
