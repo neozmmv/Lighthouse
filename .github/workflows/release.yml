@@ -1,17 +1,13 @@
-name: Release CLI
+name: Release
 
 on:
   push:
     tags:
       - "v*"
-      - "!v*-win"
 
 jobs:
-  build:
+  build-unix:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - uses: actions/checkout@v4
 
@@ -19,31 +15,107 @@ jobs:
         with:
           go-version: "1.25"
 
-      - name: Build Linux
+      - name: Build Linux amd64
         run: go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-linux-amd64
         working-directory: cli
 
-      - name: Build macOS
-        run: GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-amd64
-        working-directory: cli
-
-      - name: Build Linux ARM
+      - name: Build Linux arm64
         run: GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-linux-arm64
         working-directory: cli
 
-      - name: Build macOS ARM (Apple Silicon)
+      - name: Build macOS amd64
+        run: GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-amd64
+        working-directory: cli
+
+      - name: Build macOS arm64
         run: GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse-darwin-arm64
         working-directory: cli
 
-      - name: Create new Release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          name: "Lighthouse ${{ github.ref_name }}"
-          files: |
+          name: unix-binaries
+          path: |
             cli/lighthouse-linux-amd64
             cli/lighthouse-linux-arm64
             cli/lighthouse-darwin-amd64
             cli/lighthouse-darwin-arm64
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        run: |
+          npm install
+          npm run build
+        working-directory: frontend
+
+      - name: Copy frontend to CLI embed dir
+        shell: pwsh
+        run: Copy-Item -Recurse frontend/dist cli/cmd/frontend
+
+      - name: Build backend
+        run: go build -o ../cli/cmd/backend.exe .
+        working-directory: backend-go
+
+      - name: Build lighthouse.exe
+        run: go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ github.ref_name }}" -o lighthouse.exe .
+        working-directory: cli
+
+      - name: Install NSIS
+        run: choco install nsis --yes
+
+      - name: Update version in installer
+        shell: pwsh
+        run: |
+          (Get-Content installer.nsi) -replace '!define APP_VERSION ".*"', '!define APP_VERSION "${{ github.ref_name }}"' | Set-Content installer.nsi
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          & $nsis installer.nsi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: LighthouseSetup.exe
+
+  release:
+    needs: [build-unix, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: unix-binaries
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Lighthouse ${{ github.ref_name }}"
+          files: |
+            lighthouse-linux-amd64
+            lighthouse-linux-arm64
+            lighthouse-darwin-amd64
+            lighthouse-darwin-arm64
+            LighthouseSetup.exe
             docker-compose.yml
             Caddyfile
             install.sh
