@@ -21,6 +21,17 @@ type server struct {
 	s3Local *minio.Client // local — presigned download URLs for the host
 }
 
+// getOnionEndpoint returns the .onion hostname for presigned upload URLs.
+// Reads from the Tor hidden service hostname file if available (Docker),
+// otherwise falls back to MINIO_PUBLIC_ENDPOINT env var (Windows native).
+func getOnionEndpoint() string {
+	data, err := os.ReadFile("/var/lib/tor/hidden_service/hostname")
+	if err == nil {
+		return strings.TrimSpace(string(data))
+	}
+	return getEnv("MINIO_PUBLIC_ENDPOINT", "127.0.0.1:9000")
+}
+
 func newServer() (*server, error) {
 	minioEndpoint := getEnv("MINIO_ENDPOINT", "127.0.0.1:9000")
 	minioLocalEndpoint := getEnv("MINIO_LOCAL_ENDPOINT", "127.0.0.1:9000")
@@ -102,7 +113,7 @@ func (s *server) uploadInit(c *gin.Context) {
 
 	// create a temporary client pointing to the public .onion endpoint for
 	// presigning only — Presign() computes the signature locally, no connection is made
-	publicEndpoint := getEnv("MINIO_PUBLIC_ENDPOINT", "127.0.0.1:9000")
+	publicEndpoint := getOnionEndpoint()
 	minioUser := getEnv("MINIO_ROOT_USER", "lighthouse")
 	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse")
 
