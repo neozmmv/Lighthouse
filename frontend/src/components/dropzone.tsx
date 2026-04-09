@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import type { DragEvent, ChangeEvent } from "react";
 
-const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB per part
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB per part
 
 type DropState =
   | "idle"
@@ -56,6 +56,33 @@ function uploadChunk(
     xhr.open("PUT", url);
     xhr.send(data);
   });
+}
+
+async function uploadChunkWithRetry(
+  url: string,
+  data: Blob,
+  onProgress: (loaded: number) => void,
+  signal: AbortSignal,
+  maxRetries = 4,
+): Promise<string> {
+  let lastError: Error = new Error("Upload failed");
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      onProgress(0);
+      const delay = Math.min(1000 * 2 ** (attempt - 1), 16000); // 1s, 2s, 4s, 8s
+      await new Promise<void>((res, rej) => {
+        const t = setTimeout(res, delay);
+        signal.addEventListener("abort", () => { clearTimeout(t); rej(new DOMException("Aborted", "AbortError")); });
+      });
+    }
+    try {
+      return await uploadChunk(url, data, onProgress, signal);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+  throw lastError;
 }
 
 export default function Dropzone() {
@@ -178,7 +205,7 @@ export default function Dropzone() {
           const chunk = file!.slice(start, start + CHUNK_SIZE);
           const { part_number, url } = urls[i];
 
-          const etag = await uploadChunk(
+          const etag = await uploadChunkWithRetry(
             url,
             chunk,
             (loaded) => {

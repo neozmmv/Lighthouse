@@ -202,7 +202,13 @@ func writeCaddyfile() error {
         respond 404
     }
     handle /api/* {
-        reverse_proxy 127.0.0.1:8000
+        reverse_proxy 127.0.0.1:8000 {
+            transport http {
+                read_timeout 0
+                write_timeout 0
+                response_header_timeout 0
+            }
+        }
     }
     handle /files* {
         respond 403
@@ -228,7 +234,13 @@ func writeCaddyfile() error {
 
 :4405 {
     handle /api/* {
-        reverse_proxy 127.0.0.1:8000
+        reverse_proxy 127.0.0.1:8000 {
+            transport http {
+                read_timeout 0
+                write_timeout 0
+                response_header_timeout 0
+            }
+        }
     }
     handle {
         root * {$LIGHTHOUSE_STATIC_DIR}
