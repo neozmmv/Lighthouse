@@ -42,8 +42,8 @@ Section "Install"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Lighthouse" "UninstallString" "${INSTALL_DIR}\uninstall.exe"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Lighthouse" "DisplayVersion" "${APP_VERSION}"
 
-    ; run lighthouse up after install
-    Exec '"$INSTDIR\${EXE_NAME}" up'
+    ; run lighthouse up after install (commented)
+    ;Exec '"$INSTDIR\${EXE_NAME}" up'
 SectionEnd
 
 Section "Uninstall"
