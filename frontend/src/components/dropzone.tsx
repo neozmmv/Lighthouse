@@ -72,13 +72,15 @@ async function uploadChunkWithRetry(
       const delay = Math.min(1000 * 2 ** (attempt - 1), 16000); // 1s, 2s, 4s, 8s
       await new Promise<void>((res, rej) => {
         const t = setTimeout(res, delay);
-        signal.addEventListener("abort", () => { clearTimeout(t); rej(new DOMException("Aborted", "AbortError")); });
+        signal.addEventListener("abort", () => { clearTimeout(t); rej(new DOMException("Aborted", "AbortError")); }, { once: true });
       });
     }
     try {
       return await uploadChunk(url, data, onProgress, signal);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") throw err;
+      // don't retry client errors (4xx) — they won't resolve on their own
+      if (err instanceof Error && /status 4\d\d/.test(err.message)) throw err;
       lastError = err instanceof Error ? err : new Error(String(err));
     }
   }
