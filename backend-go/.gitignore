@@ -1,2 +1,5 @@
 backend
 backend.exe
+backend-go
+backend-go.exe
+*.log
