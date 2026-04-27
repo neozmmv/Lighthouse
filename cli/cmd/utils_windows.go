@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,6 +11,37 @@ import (
 )
 
 const backendBaseURL = "http://localhost:8000"
+
+// port to point the tunnel to (windows - 8080)
+const tunnelBaseURL = "http://localhost:8080"
+
+func getCloudflareTunnelURL() (string, *exec.Cmd, error) {
+	c := exec.Command("cloudflared", "tunnel", "--url", tunnelBaseURL)
+
+	stderr, err := c.StderrPipe()
+	if err != nil {
+		return "", nil, err
+	}
+
+	if err := c.Start(); err != nil {
+		return "", nil, fmt.Errorf("failed to start cloudflared: %w", err)
+	}
+
+	scanner := bufio.NewScanner(stderr)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "trycloudflare.com") {
+			parts := strings.Fields(line)
+			for _, p := range parts {
+				if strings.HasPrefix(p, "https://") {
+					return p, c, nil
+				}
+			}
+		}
+	}
+
+	return "", nil, fmt.Errorf("URL not found in cloudflared output")
+}
 
 // gets directory for lighthouse (appdata/lighthouse)
 func getLighthouseDir() (string, error) {
