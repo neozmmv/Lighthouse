@@ -19,7 +19,11 @@ const tunnelBaseURL = "http://localhost:8080"
 func getCloudflareTunnelURL() (string, *exec.Cmd, error) {
 	// to kill the tunnel use the *exec.Cmd
 	// cmd.Process.Kill()
-	c := exec.Command("cloudflared", "tunnel", "--url", tunnelBaseURL)
+	binDir, err := getBinDir()
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get bin dir: %w", err)
+	}
+	c := exec.Command(filepath.Join(binDir, "cloudflared.exe"), "tunnel", "--url", tunnelBaseURL)
 	c.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 	}

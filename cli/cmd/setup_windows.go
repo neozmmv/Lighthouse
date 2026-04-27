@@ -22,10 +22,11 @@ import (
 // MINIO AND CADDY ALREADY RESOLVE THE LATEST VERSION VIA THEIR DOWNLOAD URLS.
 // TOR DOESN'T, SO THE VERSION IS HARDCODED HERE AND UPDATED MANUALLY ON RELEASE.
 const (
-	torVersion       = "15.0.8"
-	torDownloadURL   = "https://dist.torproject.org/torbrowser/" + torVersion + "/tor-expert-bundle-windows-x86_64-" + torVersion + ".tar.gz"
-	minioDownloadURL = "https://dl.min.io/server/minio/release/windows-amd64/minio.exe"
-	caddyDownloadURL = "https://caddyserver.com/api/download?os=windows&arch=amd64&idempotency=1"
+	torVersion          = "15.0.8"
+	torDownloadURL      = "https://dist.torproject.org/torbrowser/" + torVersion + "/tor-expert-bundle-windows-x86_64-" + torVersion + ".tar.gz"
+	minioDownloadURL    = "https://dl.min.io/server/minio/release/windows-amd64/minio.exe"
+	caddyDownloadURL    = "https://caddyserver.com/api/download?os=windows&arch=amd64&idempotency=1"
+	cloudflaredDownloadURL = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 )
 
 func downloadBinaries() error {
@@ -47,6 +48,11 @@ func downloadBinaries() error {
 	fmt.Println("Downloading Caddy...")
 	if err := downloadBinary(caddyDownloadURL, filepath.Join(binDir, "caddy.exe")); err != nil {
 		return fmt.Errorf("failed to download Caddy: %w", err)
+	}
+
+	fmt.Println("Downloading cloudflared...")
+	if err := downloadBinary(cloudflaredDownloadURL, filepath.Join(binDir, "cloudflared.exe")); err != nil {
+		return fmt.Errorf("failed to download cloudflared: %w", err)
 	}
 
 	return nil
