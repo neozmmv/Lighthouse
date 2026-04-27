@@ -21,7 +21,7 @@ type server struct {
 	s3Local *minio.Client // local — presigned download URLs for the host
 }
 
-// getOnionEndpoint returns the .onion hostname for presigned upload URLs.
+// getOnionEndpoint returns the public endpoint for presigned upload URLs.
 // Reads from the Tor hidden service hostname file if available (Docker),
 // otherwise falls back to MINIO_PUBLIC_ENDPOINT env var (Windows native).
 func getOnionEndpoint() string {
@@ -30,6 +30,18 @@ func getOnionEndpoint() string {
 		return strings.TrimSpace(string(data))
 	}
 	return getEnv("MINIO_PUBLIC_ENDPOINT", "127.0.0.1:9000")
+}
+
+// parseEndpoint splits a raw endpoint (which may be a full URL or bare host:port)
+// into the host and whether TLS should be used.
+func parseEndpoint(raw string) (host string, secure bool) {
+	if strings.HasPrefix(raw, "https://") {
+		return strings.TrimPrefix(raw, "https://"), true
+	}
+	if strings.HasPrefix(raw, "http://") {
+		return strings.TrimPrefix(raw, "http://"), false
+	}
+	return raw, false
 }
 
 func newServer() (*server, error) {
@@ -111,15 +123,15 @@ func (s *server) uploadInit(c *gin.Context) {
 		return
 	}
 
-	// create a temporary client pointing to the public .onion endpoint for
+	// create a temporary client pointing to the public endpoint for
 	// presigning only — Presign() computes the signature locally, no connection is made
-	publicEndpoint := getOnionEndpoint()
+	publicHost, publicSecure := parseEndpoint(getOnionEndpoint())
 	minioUser := getEnv("MINIO_ROOT_USER", "lighthouse")
 	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse")
 
-	s3Public, err := minio.New(publicEndpoint, &minio.Options{
+	s3Public, err := minio.New(publicHost, &minio.Options{
 		Creds:        credentials.NewStaticV4(minioUser, minioPass, ""),
-		Secure:       false,
+		Secure:       publicSecure,
 		Region:       "us-east-1",
 		BucketLookup: minio.BucketLookupPath,
 	})

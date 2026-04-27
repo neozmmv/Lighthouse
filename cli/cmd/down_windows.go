@@ -47,6 +47,7 @@ var downCmd = &cobra.Command{
 		if err := clearPid(); err != nil {
 			return fmt.Errorf("failed to clear PID file: %w", err)
 		}
+		clearTunnelURL()
 
 		fmt.Println("Lighthouse stopped.")
 		return nil

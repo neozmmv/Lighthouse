@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 const backendBaseURL = "http://localhost:8000"
@@ -16,7 +17,12 @@ const backendBaseURL = "http://localhost:8000"
 const tunnelBaseURL = "http://localhost:8080"
 
 func getCloudflareTunnelURL() (string, *exec.Cmd, error) {
+	// to kill the tunnel use the *exec.Cmd
+	// cmd.Process.Kill()
 	c := exec.Command("cloudflared", "tunnel", "--url", tunnelBaseURL)
+	c.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	}
 
 	stderr, err := c.StderrPipe()
 	if err != nil {
@@ -34,6 +40,11 @@ func getCloudflareTunnelURL() (string, *exec.Cmd, error) {
 			parts := strings.Fields(line)
 			for _, p := range parts {
 				if strings.HasPrefix(p, "https://") {
+					// keep draining stderr so cloudflared never blocks on a full pipe
+					go func() {
+						for scanner.Scan() {
+						}
+					}()
 					return p, c, nil
 				}
 			}
