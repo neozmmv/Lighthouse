@@ -2,7 +2,7 @@
 
 # Lighthouse
 
-A temporary file-receiving station hosted on the Tor network. Run it, share your `.onion` address, receive files, shut it down.
+A temporary and self-hosted file-receiving station. Run it, share your address, receive files, shut it down.
 
 ## Concept
 
@@ -13,22 +13,30 @@ Lighthouse removes the usual friction from receiving files from someone:
 - No server setup
 - No file size limits
 
-You spin it up, Tor creates a hidden service and gives you an `.onion` address. You share that address with whoever needs to send you files. They open it in Tor Browser, upload the file, you download it. Done. Shut it down.
+You spin it up, choose your transport layer, and share the address with whoever needs to send you files. They upload. You download. Shut it down.
 
 ## How it works
 
-```
-Sender (Tor Browser) --> .onion address --> Tor network --> Lighthouse (your machine)
-```
+Lighthouse supports two transport modes:
 
-Tor's hidden service acts as the networking layer, so your machine is reachable without a public IP or open ports.
+**Tor (default)** — creates a hidden service and gives you an `.onion` address. Your IP stays hidden. Works without a public IP or open ports. Slower.
+
+**Cloudflare Tunnel (`--tunnel`)** — exposes Lighthouse via a Cloudflare-issued public URL. Faster, but Cloudflare sits in the middle of the traffic.
+
+```
+# Tor mode
+Sender (Tor Browser) ──► Tor network ──► Lighthouse (your machine)
+
+# Tunnel mode
+Sender (any browser) ──► Cloudflare Tunnel ──► Lighthouse (your machine)
+```
 
 ## Stack
 
 - **Frontend** — React + TypeScript (Vite, TanStack Router, Tailwind CSS)
 - **Backend** — Go (Gin), proxied at `/api/`
 - **Storage** — MinIO (S3-compatible object storage)
-- **Transport** — Tor hidden service
+- **Transport** — Tor hidden service or Cloudflare Tunnel
 
 On **Linux and macOS**, everything runs in Docker. On **Windows**, all components run natively — no Docker required.
 
@@ -65,19 +73,23 @@ lighthouse up
 
 On first run, Lighthouse sets itself up automatically — no configuration needed.
 
-If port 80 is already in use, specify a different one:
+By default, Lighthouse uses Tor as its transport. To expose it via a Cloudflare Tunnel instead:
 
 ```bash
-lighthouse up --port 8080
+lighthouse up --tunnel
 ```
 
-### Get your `.onion` address
+> **Note:** `--tunnel` trades anonymity for speed. Cloudflare will see transfer metadata (IPs, timestamps, file sizes). Use Tor mode if anonymity matters.
+
+### Get your onion address
+
+Your `.onion` address remains the same, you get it with this command:
 
 ```bash
 lighthouse url
 ```
 
-Share this address with whoever needs to send you files. They open it in Tor Browser.
+In tunnel mode, your `trycloudflare.com` address will appear in your terminal once you start it with the `--tunnel` flag.
 
 ### Check status
 
