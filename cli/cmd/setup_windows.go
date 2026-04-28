@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -24,14 +25,33 @@ import (
 )
 
 // MINIO AND CADDY ALREADY RESOLVE THE LATEST VERSION VIA THEIR DOWNLOAD URLS.
-// TOR DOESN'T, SO THE VERSION IS HARDCODED HERE AND UPDATED MANUALLY ON RELEASE.
+// TOR GETS UPDATED DYNAMICALLY.
 const (
-	torVersion             = "15.0.8"
-	torDownloadURL         = "https://dist.torproject.org/torbrowser/" + torVersion + "/tor-expert-bundle-windows-x86_64-" + torVersion + ".tar.gz"
+	//torVersion = "15.0.8"
+	//torDownloadURL         = "https://dist.torproject.org/torbrowser/" + torVersion + "/tor-expert-bundle-windows-x86_64-" + torVersion + ".tar.gz"
 	minioDownloadURL       = "https://dl.min.io/server/minio/release/windows-amd64/minio.exe"
 	caddyDownloadURL       = "https://caddyserver.com/api/download?os=windows&arch=amd64&idempotency=1"
 	cloudflaredDownloadURL = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 )
+
+func getLatestTorDownloadURL() (string, error) {
+	resp, err := http.Get("https://aus1.torproject.org/torbrowser/update_3/release/downloads.json")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var data map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return "", err
+	}
+
+	downloads := data["downloads"].(map[string]interface{})
+	win64 := downloads["win64"].(map[string]interface{})
+	binary := win64["binary"].(map[string]interface{})
+
+	return binary["url"].(string), nil
+}
 
 func downloadBinaries() error {
 	binDir, err := getBinDir()
@@ -202,8 +222,13 @@ func extractBackend() error {
 
 func downloadTor(binDir string) error {
 	// download tor expert bundle tar.gz
+	torURL, err := getLatestTorDownloadURL()
+	if err != nil {
+		return fmt.Errorf("failed to get Tor download URL: %w", err)
+	}
+
 	tmpFile := filepath.Join(binDir, "tor.tar.gz")
-	if err := downloadBinary(torDownloadURL, tmpFile); err != nil {
+	if err := downloadBinary(torURL, tmpFile); err != nil {
 		return err
 	}
 	defer os.Remove(tmpFile)
@@ -432,6 +457,12 @@ func runSetup() error {
 
 	if err := initMinIOBucket(cfg); err != nil {
 		return err
+	}
+
+	// creates the key pair
+	err = generateRSAKeyPair()
+	if err != nil {
+		return fmt.Errorf("failed to generate RSA key pair: %w", err)
 	}
 
 	// mark as initialized
