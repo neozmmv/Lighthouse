@@ -199,6 +199,9 @@ var daemonCmd = &cobra.Command{
 				minio.Process.Kill()
 				return fmt.Errorf("failed to start cloudflare tunnel: %w", err)
 			}
+			if err := saveCloudflaredPid(cfCmd.Process.Pid); err != nil {
+				return err
+			}
 			if err := assignToJob(job, cfCmd.Process.Pid); err != nil {
 				minio.Process.Kill()
 				cfCmd.Process.Kill()

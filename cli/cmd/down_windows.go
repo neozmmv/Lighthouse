@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -24,7 +25,7 @@ var downCmd = &cobra.Command{
 		}
 
 		// read daemon PID from file
-		data, err := os.ReadFile(dir + "\\lighthouse.pid")
+		data, err := os.ReadFile(filepath.Join(dir, "lighthouse.pid"))
 		if err != nil {
 			return fmt.Errorf("failed to read PID file: %w", err)
 		}
@@ -46,6 +47,11 @@ var downCmd = &cobra.Command{
 
 		if err := clearPid(); err != nil {
 			return fmt.Errorf("failed to clear PID file: %w", err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "cloudflared.pid")); err == nil {
+			if err := killCloudflareTunnel(); err != nil {
+				fmt.Printf("warning: failed to stop cloudflared: %v\n", err)
+			}
 		}
 		clearTunnelURL()
 

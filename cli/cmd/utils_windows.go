@@ -58,6 +58,53 @@ func getCloudflareTunnelURL() (string, *exec.Cmd, error) {
 	return "", nil, fmt.Errorf("URL not found in cloudflared output")
 }
 
+func killCloudflareTunnel() error {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "cloudflared.pid"))
+	if os.IsNotExist(err) {
+		return nil // no tunnel running
+	}
+	if err != nil {
+		return err
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return err
+	}
+
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return err
+	}
+
+	if err := p.Kill(); err != nil {
+		return err
+	}
+
+	return clearCloudflaredPid()
+}
+
+func saveCloudflaredPid(pid int) error {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "cloudflared.pid"), []byte(strconv.Itoa(pid)), 0600)
+}
+
+func clearCloudflaredPid() error {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return err
+	}
+	return os.Remove(filepath.Join(dir, "cloudflared.pid"))
+}
+
 // gets directory for lighthouse (appdata/lighthouse)
 func getLighthouseDir() (string, error) {
 	appData := os.Getenv("APPDATA")
