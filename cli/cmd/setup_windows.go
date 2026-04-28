@@ -46,11 +46,17 @@ func getLatestTorDownloadURL() (string, error) {
 		return "", err
 	}
 
-	downloads := data["downloads"].(map[string]interface{})
-	win64 := downloads["win64"].(map[string]interface{})
-	binary := win64["binary"].(map[string]interface{})
+	version, ok := data["version"].(string)
+	if !ok {
+		return "", fmt.Errorf("version not found in Tor API response")
+	}
 
-	return binary["url"].(string), nil
+	// build the url with the version
+	url := fmt.Sprintf(
+		"https://dist.torproject.org/torbrowser/%s/tor-expert-bundle-windows-x86_64-%s.tar.gz",
+		version, version,
+	)
+	return url, nil
 }
 
 func downloadBinaries() error {
