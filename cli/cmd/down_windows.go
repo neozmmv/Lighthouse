@@ -50,11 +50,11 @@ var downCmd = &cobra.Command{
 		}
 		if _, err := os.Stat(filepath.Join(dir, "cloudflared.pid")); err == nil {
 			if err := killCloudflareTunnel(); err != nil {
-				fmt.Printf("warning: failed to stop cloudflared: %v\n", err)
+				//fmt.Printf("warning: failed to stop cloudflared: %v\n", err)
 			}
 		}
 		clearTunnelURL()
-
+		clearCloudflaredPid()
 		fmt.Println("Lighthouse stopped.")
 		return nil
 	},
