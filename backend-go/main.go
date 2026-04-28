@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -280,6 +281,15 @@ func (s *server) downloadFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"url": url.String(), "filename": filename})
 }
 
+func (s *server) publicKey(c *gin.Context) {
+	key, err := readPublicKey()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to read public key: %s", err)})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"public_key": key})
+}
+
 // --- helpers ---
 
 func getEnv(key, fallback string) string {
@@ -287,6 +297,34 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// same function as in the cli, duplicated here to avoid importing cli package
+func getLighthouseDir() (string, error) {
+	appData := os.Getenv("APPDATA")
+	if appData == "" {
+		return "", fmt.Errorf("APPDATA environment variable is not set")
+	}
+
+	dir := filepath.Join(appData, "lighthouse")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create lighthouse directory: %w", err)
+	}
+	return dir, nil
+}
+
+func readPublicKey() (string, error) {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get lighthouse directory: %w", err)
+	}
+	keysDir := filepath.Join(dir, "keys")
+	data, err := os.ReadFile(filepath.Join(keysDir, "public.pem"))
+	if err != nil {
+		return "", fmt.Errorf("failed to read public key: %w", err)
+	}
+
+	return string(data), nil
 }
 
 func main() {
@@ -319,6 +357,7 @@ func main() {
 	r.GET("/api/files", srv.listFiles)
 	r.DELETE("/api/files/*file_id", srv.deleteFile)
 	r.GET("/api/files/*file_id", srv.downloadFile)
+	r.GET("/api/public_key", srv.publicKey)
 
 	addr := fmt.Sprintf(":%s", getEnv("PORT", "8000"))
 	log.Printf("listening on %s", addr)
