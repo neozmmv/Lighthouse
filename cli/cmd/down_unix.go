@@ -24,12 +24,24 @@ var downCmd = &cobra.Command{
 			return err
 		}
 
+		mode, _ := getActiveMode()
+		composeFile := "docker-compose.yml"
+		if mode == "tunnel" {
+			composeFile = "docker-compose.cloudflare.yml"
+		}
+
 		fmt.Println("Stopping Lighthouse...")
-		c := exec.Command("docker", "compose", "down")
+		c := exec.Command("docker", "compose", "-f", composeFile, "down")
 		c.Dir = dir
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
-		return c.Run()
+		c.Env = append(os.Environ(), "LIGHTHOUSE_DIR="+dir)
+		if err := c.Run(); err != nil {
+			return err
+		}
+
+		clearTunnelURL()
+		return nil
 	},
 }
 

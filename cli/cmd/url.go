@@ -6,36 +6,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// this is for the docker version.
-/* func getOnionUrl() (string, error) {
-	dir, err := getLighthouseDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get lighthouse directory: %w", err)
-	}
-
-	c := exec.Command("docker", "exec", "lighthouse-tor", "cat", "/var/lib/tor/hidden_service/hostname")
-	c.Dir = dir
-	output, err := c.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get .onion URL: %w", err)
-	}
-
-	url := strings.TrimSpace(string(output))
-	return url, nil
-}
-*/
-
 var urlCmd = &cobra.Command{
 	Use:   "url",
-	Short: "Get the .onion URL for sending files. (Lighthouse must be running!)",
+	Short: "Get the URL for sending files. (Lighthouse must be running!)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		running := isRunning()
-		if !running {
+		if !isRunning() {
 			return fmt.Errorf("Lighthouse is not running. Please start it with 'lighthouse up' first.")
+		}
+		// Tunnel URL is only present when started with --tunnel
+		if url, err := getTunnelURL(); err == nil {
+			fmt.Println(url)
+			return nil
 		}
 		url, err := getOnionAddress()
 		if err != nil {
-			return fmt.Errorf("failed to get .onion URL: %w", err)
+			return fmt.Errorf("failed to get URL: %w", err)
 		}
 		fmt.Println(url)
 		return nil

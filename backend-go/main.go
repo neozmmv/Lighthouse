@@ -299,31 +299,21 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// same function as in the cli, duplicated here to avoid importing cli package
-func getLighthouseDir() (string, error) {
-	appData := os.Getenv("APPDATA")
-	if appData == "" {
-		return "", fmt.Errorf("APPDATA environment variable is not set")
-	}
-
-	dir := filepath.Join(appData, "lighthouse")
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create lighthouse directory: %w", err)
-	}
-	return dir, nil
-}
-
 func readPublicKey() (string, error) {
-	dir, err := getLighthouseDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get lighthouse directory: %w", err)
+	// Docker: LIGHTHOUSE_KEYS_DIR is set via docker-compose (e.g. /lighthouse/keys)
+	// Windows: falls back to %APPDATA%\lighthouse\keys
+	keysDir := os.Getenv("LIGHTHOUSE_KEYS_DIR")
+	if keysDir == "" {
+		appData := os.Getenv("APPDATA")
+		if appData == "" {
+			return "", fmt.Errorf("LIGHTHOUSE_KEYS_DIR is not set")
+		}
+		keysDir = filepath.Join(appData, "lighthouse", "keys")
 	}
-	keysDir := filepath.Join(dir, "keys")
 	data, err := os.ReadFile(filepath.Join(keysDir, "public.pem"))
 	if err != nil {
 		return "", fmt.Errorf("failed to read public key: %w", err)
 	}
-
 	return string(data), nil
 }
 

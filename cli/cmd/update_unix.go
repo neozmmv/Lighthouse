@@ -48,6 +48,11 @@ func updateConfigFiles() error {
 		return fmt.Errorf("failed to update docker-compose.yml: %w", err)
 	}
 
+	fmt.Println("Updating docker-compose.cloudflare.yml...")
+	if err := downloadToFile(githubBaseURL+"/docker-compose.cloudflare.yml", filepath.Join(dir, "docker-compose.cloudflare.yml")); err != nil {
+		return fmt.Errorf("failed to update docker-compose.cloudflare.yml: %w", err)
+	}
+
 	fmt.Println("Updating Caddyfile...")
 	if err := downloadToFile(githubBaseURL+"/Caddyfile", filepath.Join(dir, "Caddyfile")); err != nil {
 		return fmt.Errorf("failed to update Caddyfile: %w", err)
@@ -57,6 +62,7 @@ func updateConfigFiles() error {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	c.Dir = dir
+	c.Env = append(os.Environ(), "LIGHTHOUSE_DIR="+dir)
 	if err := c.Run(); err != nil {
 		return fmt.Errorf("failed to pull latest Docker images: %w", err)
 	}
