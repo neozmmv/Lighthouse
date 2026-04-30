@@ -117,6 +117,7 @@ jobs:
             lighthouse-darwin-arm64
             LighthouseSetup.exe
             docker-compose.yml
+            docker-compose.cloudflare.yml
             Caddyfile
             install.sh
             uninstall.sh
