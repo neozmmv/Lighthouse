@@ -23,7 +23,7 @@ func getCloudflareTunnelURL() (string, *exec.Cmd, error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get bin dir: %w", err)
 	}
-	c := exec.Command(filepath.Join(binDir, "cloudflared.exe"), "tunnel", "--url", tunnelBaseURL)
+	c := exec.Command(filepath.Join(binDir, "cloudflared.exe"), "tunnel", "--config", "nul", "--url", tunnelBaseURL)
 	c.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 	}
