@@ -12,11 +12,6 @@ SetCompressor lzma
 
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
-!include "StrFunc.nsh"
-
-${StrStr}
-${StrRep}
-${UnStrRep}
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
@@ -27,22 +22,125 @@ ${UnStrRep}
 
 !insertmacro MUI_LANGUAGE "English"
 
+Function PathContainsEntry
+    ; input: $0 = PATH, $2 = entry
+    ; output: $3 = 1 if found, 0 otherwise
+    Push $1
+    Push $4
+    Push $5
+    Push $6
+    Push $7
+
+    StrCpy $3 "0"
+    StrCpy $6 "$0"
+
+    ${DoWhile} $6 != ""
+        StrLen $7 "$6"
+        StrCpy $4 0
+        StrCpy $5 ""
+
+        ${Do}
+            ${If} $4 >= $7
+                StrCpy $5 "$6"
+                StrCpy $6 ""
+                ${Break}
+            ${EndIf}
+
+            StrCpy $1 "$6" 1 $4
+
+            ${If} $1 == ";"
+                StrCpy $5 "$6" $4
+                IntOp $4 $4 + 1
+                StrCpy $6 "$6" "" $4
+                ${Break}
+            ${EndIf}
+
+            IntOp $4 $4 + 1
+        ${Loop}
+
+        ${If} $5 == "$2"
+            StrCpy $3 "1"
+            ${Break}
+        ${EndIf}
+    ${Loop}
+
+    Pop $7
+    Pop $6
+    Pop $5
+    Pop $4
+    Pop $1
+FunctionEnd
+
+Function un.RemovePathEntry
+    ; input: $0 = PATH, $2 = entry to remove
+    ; output: $0 = updated PATH
+    Push $1
+    Push $3
+    Push $4
+    Push $5
+    Push $6
+    Push $7
+
+    StrCpy $5 ""
+    StrCpy $6 "$0"
+
+    ${DoWhile} $6 != ""
+        StrLen $7 "$6"
+        StrCpy $4 0
+        StrCpy $3 ""
+
+        ${Do}
+            ${If} $4 >= $7
+                StrCpy $3 "$6"
+                StrCpy $6 ""
+                ${Break}
+            ${EndIf}
+
+            StrCpy $1 "$6" 1 $4
+
+            ${If} $1 == ";"
+                StrCpy $3 "$6" $4
+                IntOp $4 $4 + 1
+                StrCpy $6 "$6" "" $4
+                ${Break}
+            ${EndIf}
+
+            IntOp $4 $4 + 1
+        ${Loop}
+
+        ${If} $3 != ""
+        ${AndIf} $3 != "$2"
+            ${If} $5 == ""
+                StrCpy $5 "$3"
+            ${Else}
+                StrCpy $5 "$5;$3"
+            ${EndIf}
+        ${EndIf}
+    ${Loop}
+
+    StrCpy $0 "$5"
+
+    Pop $7
+    Pop $6
+    Pop $5
+    Pop $4
+    Pop $3
+    Pop $1
+FunctionEnd
+
 Section "Install"
     SetOutPath "$INSTDIR"
 
-    ; copy the executable
     File "cli\lighthouse.exe"
 
-    ; read current user PATH
     ClearErrors
     ReadRegStr $0 HKCU "Environment" "Path"
 
     ${If} ${Errors}
-        MessageBox MB_ICONSTOP "Nao foi possivel ler o PATH do usuario. A instalacao sera interrompida para evitar sobrescrever o PATH."
+        MessageBox MB_ICONSTOP "Could not read PATH. Installation will be stopped to avoid overwriting PATH."
         Abort
     ${EndIf}
 
-    ; create a backup only once
     ClearErrors
     ReadRegStr $4 HKCU "Environment" "Path_Backup_Before_Lighthouse"
 
@@ -51,12 +149,10 @@ Section "Install"
         WriteRegExpandStr HKCU "Environment" "Path_Backup_Before_Lighthouse" "$0"
     ${EndIf}
 
-    ; check if install dir already exists as a PATH segment
-    StrCpy $1 ";$0;"
-    StrCpy $2 ";$INSTDIR;"
-    ${StrStr} $3 "$1" "$2"
+    StrCpy $2 "$INSTDIR"
+    Call PathContainsEntry
 
-    ${If} $3 == ""
+    ${If} $3 != "1"
         ${If} $0 == ""
             StrCpy $0 "$INSTDIR"
         ${Else}
@@ -67,43 +163,26 @@ Section "Install"
         SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
     ${EndIf}
 
-    ; create uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
-    ; add to Add/Remove Programs
     WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "${APP_NAME}"
     WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
     WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
     WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "${APP_NAME}"
     WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
 
-    ; run lighthouse up after install, if desired
     ; Exec '"$INSTDIR\${EXE_NAME}" up'
 SectionEnd
 
 Section "Uninstall"
-    ; stop lighthouse, ignore failures
     ExecWait '"$INSTDIR\${EXE_NAME}" down'
 
-    ; read current user PATH
     ClearErrors
     ReadRegStr $0 HKCU "Environment" "Path"
 
     ${IfNot} ${Errors}
-        ; remove only the exact Lighthouse install directory segment
-        StrCpy $1 ";$0;"
-        StrCpy $2 ";$INSTDIR;"
-        ${UnStrRep} $1 "$1" "$2" ";"
-
-        ; if result is only ";", PATH becomes empty
-        ${If} $1 == ";"
-            StrCpy $0 ""
-        ${Else}
-            ; trim first and last semicolon
-            StrLen $3 "$1"
-            IntOp $3 $3 - 2
-            StrCpy $0 "$1" $3 1
-        ${EndIf}
+        StrCpy $2 "$INSTDIR"
+        Call un.RemovePathEntry
 
         WriteRegExpandStr HKCU "Environment" "Path" "$0"
         SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
@@ -115,4 +194,3 @@ Section "Uninstall"
 
     DeleteRegKey HKCU "${UNINSTALL_KEY}"
 SectionEnd
-
