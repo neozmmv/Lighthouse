@@ -87,6 +87,14 @@ var upCmd = &cobra.Command{
 			if err := runSetup(); err != nil {
 				return fmt.Errorf("setup failed: %w", err)
 			}
+		} else {
+			// Re-extract embedded assets on every start so upgrades take effect
+			if err := extractFrontend(); err != nil {
+				return fmt.Errorf("failed to update frontend: %w", err)
+			}
+			if err := extractBackend(); err != nil {
+				return fmt.Errorf("failed to update backend: %w", err)
+			}
 		}
 
 		fmt.Println("Starting Lighthouse...")
