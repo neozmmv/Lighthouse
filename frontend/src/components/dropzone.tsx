@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { DragEvent, ChangeEvent } from "react";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB per part
@@ -96,6 +96,16 @@ export default function Dropzone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const ctxRef = useRef<UploadCtx | null>(null);
+  const concurrencyRef = useRef<number>(1);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.upload_concurrency) concurrencyRef.current = data.upload_concurrency;
+      })
+      .catch(() => {});
+  }, []);
 
   function handleFile(f: File) {
     setFile(f);
@@ -193,8 +203,8 @@ export default function Dropzone() {
       ctx = { file_id, upload_id };
       ctxRef.current = ctx;
 
-      // 2. Upload chunks (up to 2 in parallel — higher values cause MinIO lock contention)
-      const CONCURRENCY = 2;
+      // 2. Upload chunks in parallel (1 on Tor to avoid circuit issues, 5 on Cloudflare)
+      const CONCURRENCY = concurrencyRef.current;
       const parts: { part_number: number; etag: string }[] = new Array(
         totalChunks,
       );

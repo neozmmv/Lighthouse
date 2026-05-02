@@ -106,6 +106,14 @@ func (s *server) health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+func (s *server) config(c *gin.Context) {
+	concurrency := 1
+	if os.Getenv("MINIO_LOCAL_ENDPOINT") != "" {
+		concurrency = 5
+	}
+	c.JSON(http.StatusOK, gin.H{"upload_concurrency": concurrency})
+}
+
 func (s *server) uploadInit(c *gin.Context) {
 	var body initUploadRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -341,6 +349,7 @@ func main() {
 	})
 
 	r.GET("/api/health", srv.health)
+	r.GET("/api/config", srv.config)
 	r.POST("/api/upload/init", srv.uploadInit)
 	r.POST("/api/upload/finish", srv.uploadFinish)
 	r.POST("/api/upload/abort", srv.uploadAbort)
