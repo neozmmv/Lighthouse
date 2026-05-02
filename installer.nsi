@@ -10,6 +10,8 @@ RequestExecutionLevel user
 SetCompressor lzma
 
 !include "MUI2.nsh"
+!include "StrFunc.nsh"
+${StrStr}
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
@@ -26,12 +28,16 @@ Section "Install"
     ; copy the executable
     File "cli\lighthouse.exe"
 
-    ; add to user PATH
+    ; add to user PATH (preserve REG_EXPAND_SZ type, skip if already present)
     ReadRegStr $0 HKCU "Environment" "Path"
-    StrCmp $0 "" 0 +2
+    ${StrStr} $1 "$0" "${INSTALL_DIR}"
+    StrCmp $1 "" 0 path_done
+    StrCmp $0 "" 0 +3
         StrCpy $0 "${INSTALL_DIR}"
+        Goto path_done
     StrCpy $0 "$0;${INSTALL_DIR}"
-    WriteRegStr HKCU "Environment" "Path" "$0"
+    path_done:
+    WriteRegExpandStr HKCU "Environment" "Path" "$0"
     SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 
     ; create uninstaller
