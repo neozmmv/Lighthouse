@@ -16,6 +16,7 @@ SetCompressor lzma
 
 ${StrStr}
 ${StrRep}
+${UnStrRep}
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
@@ -92,7 +93,7 @@ Section "Uninstall"
         ; remove only the exact Lighthouse install directory segment
         StrCpy $1 ";$0;"
         StrCpy $2 ";$INSTDIR;"
-        ${StrRep} $1 "$1" "$2" ";"
+        ${UnStrRep} $1 "$1" "$2" ";"
 
         ; if result is only ";", PATH becomes empty
         ${If} $1 == ";"
@@ -108,11 +109,10 @@ Section "Uninstall"
         SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
     ${EndIf}
 
-    ; remove files
     Delete "$INSTDIR\${EXE_NAME}"
     Delete "$INSTDIR\uninstall.exe"
     RMDir "$INSTDIR"
 
-    ; remove registry entries
     DeleteRegKey HKCU "${UNINSTALL_KEY}"
 SectionEnd
+
