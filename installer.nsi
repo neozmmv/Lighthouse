@@ -22,146 +22,62 @@ SetCompressor lzma
 
 !insertmacro MUI_LANGUAGE "English"
 
-Function PathContainsEntry
-    ; input: $0 = PATH, $2 = entry
-    ; output: $3 = 1 if found, 0 otherwise
-    Push $1
-    Push $4
-    Push $5
-    Push $6
-    Push $7
+Function WriteInstallPathScript
+    InitPluginsDir
 
-    StrCpy $3 "0"
-    StrCpy $6 "$0"
-
-    ${DoWhile} $6 != ""
-        StrLen $7 "$6"
-        StrCpy $4 0
-        StrCpy $5 ""
-
-        ${Do}
-            ${If} $4 >= $7
-                StrCpy $5 "$6"
-                StrCpy $6 ""
-                ${Break}
-            ${EndIf}
-
-            StrCpy $1 "$6" 1 $4
-
-            ${If} $1 == ";"
-                StrCpy $5 "$6" $4
-                IntOp $4 $4 + 1
-                StrCpy $6 "$6" "" $4
-                ${Break}
-            ${EndIf}
-
-            IntOp $4 $4 + 1
-        ${Loop}
-
-        ${If} $5 == "$2"
-            StrCpy $3 "1"
-            ${Break}
-        ${EndIf}
-    ${Loop}
-
-    Pop $7
-    Pop $6
-    Pop $5
-    Pop $4
-    Pop $1
+    FileOpen $8 "$PLUGINSDIR\lighthouse-path-install.ps1" w
+    FileWrite $8 "$$ErrorActionPreference = 'Stop'$\r$\n"
+    FileWrite $8 "$$dir = $$args[0]$\r$\n"
+    FileWrite $8 "$$path = [Environment]::GetEnvironmentVariable('Path', 'User')$\r$\n"
+    FileWrite $8 "if ($$null -eq $$path) { $$path = '' }$\r$\n"
+    FileWrite $8 "$$items = @($$path -split ';' | Where-Object { $$_ -ne '' })$\r$\n"
+    FileWrite $8 "$$exists = $$false$\r$\n"
+    FileWrite $8 "foreach ($$item in $$items) {$\r$\n"
+    FileWrite $8 "  if ($$item.TrimEnd('\') -ieq $$dir.TrimEnd('\')) { $$exists = $$true; break }$\r$\n"
+    FileWrite $8 "}$\r$\n"
+    FileWrite $8 "if (-not $$exists) {$\r$\n"
+    FileWrite $8 "  $$backup = [Environment]::GetEnvironmentVariable('Path_Backup_Before_Lighthouse', 'User')$\r$\n"
+    FileWrite $8 "  if ($$null -eq $$backup) {$\r$\n"
+    FileWrite $8 "    [Environment]::SetEnvironmentVariable('Path_Backup_Before_Lighthouse', $$path, 'User')$\r$\n"
+    FileWrite $8 "  }$\r$\n"
+    FileWrite $8 "  $$items = @($$items) + $$dir$\r$\n"
+    FileWrite $8 "  [Environment]::SetEnvironmentVariable('Path', ($$items -join ';'), 'User')$\r$\n"
+    FileWrite $8 "}$\r$\n"
+    FileWrite $8 "exit 0$\r$\n"
+    FileClose $8
 FunctionEnd
 
-Function un.RemovePathEntry
-    ; input: $0 = PATH, $2 = entry to remove
-    ; output: $0 = updated PATH
-    Push $1
-    Push $3
-    Push $4
-    Push $5
-    Push $6
-    Push $7
+Function un.WriteUninstallPathScript
+    InitPluginsDir
 
-    StrCpy $5 ""
-    StrCpy $6 "$0"
-
-    ${DoWhile} $6 != ""
-        StrLen $7 "$6"
-        StrCpy $4 0
-        StrCpy $3 ""
-
-        ${Do}
-            ${If} $4 >= $7
-                StrCpy $3 "$6"
-                StrCpy $6 ""
-                ${Break}
-            ${EndIf}
-
-            StrCpy $1 "$6" 1 $4
-
-            ${If} $1 == ";"
-                StrCpy $3 "$6" $4
-                IntOp $4 $4 + 1
-                StrCpy $6 "$6" "" $4
-                ${Break}
-            ${EndIf}
-
-            IntOp $4 $4 + 1
-        ${Loop}
-
-        ${If} $3 != ""
-        ${AndIf} $3 != "$2"
-            ${If} $5 == ""
-                StrCpy $5 "$3"
-            ${Else}
-                StrCpy $5 "$5;$3"
-            ${EndIf}
-        ${EndIf}
-    ${Loop}
-
-    StrCpy $0 "$5"
-
-    Pop $7
-    Pop $6
-    Pop $5
-    Pop $4
-    Pop $3
-    Pop $1
+    FileOpen $8 "$PLUGINSDIR\lighthouse-path-uninstall.ps1" w
+    FileWrite $8 "$$ErrorActionPreference = 'Stop'$\r$\n"
+    FileWrite $8 "$$dir = $$args[0]$\r$\n"
+    FileWrite $8 "$$path = [Environment]::GetEnvironmentVariable('Path', 'User')$\r$\n"
+    FileWrite $8 "if ($$null -ne $$path) {$\r$\n"
+    FileWrite $8 "  $$items = @($$path -split ';' | Where-Object { $$_ -ne '' -and $$_.TrimEnd('\') -ine $$dir.TrimEnd('\') })$\r$\n"
+    FileWrite $8 "  [Environment]::SetEnvironmentVariable('Path', ($$items -join ';'), 'User')$\r$\n"
+    FileWrite $8 "}$\r$\n"
+    FileWrite $8 "exit 0$\r$\n"
+    FileClose $8
 FunctionEnd
+
 
 Section "Install"
     SetOutPath "$INSTDIR"
 
     File "cli\lighthouse.exe"
 
-    ClearErrors
-    ReadRegStr $0 HKCU "Environment" "Path"
+    Call WriteInstallPathScript
 
-    ${If} ${Errors}
-        MessageBox MB_ICONSTOP "Could not read PATH. Installation will be stopped to avoid overwriting PATH."
+    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\lighthouse-path-install.ps1" "$INSTDIR"' $9
+
+    ${If} $9 != 0
+        MessageBox MB_ICONSTOP "Could not update user PATH."
         Abort
     ${EndIf}
 
-    ClearErrors
-    ReadRegStr $4 HKCU "Environment" "Path_Backup_Before_Lighthouse"
-
-    ${If} ${Errors}
-        ClearErrors
-        WriteRegExpandStr HKCU "Environment" "Path_Backup_Before_Lighthouse" "$0"
-    ${EndIf}
-
-    StrCpy $2 "$INSTDIR"
-    Call PathContainsEntry
-
-    ${If} $3 != "1"
-        ${If} $0 == ""
-            StrCpy $0 "$INSTDIR"
-        ${Else}
-            StrCpy $0 "$0;$INSTDIR"
-        ${EndIf}
-
-        WriteRegExpandStr HKCU "Environment" "Path" "$0"
-        SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
-    ${EndIf}
+    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
@@ -177,16 +93,11 @@ SectionEnd
 Section "Uninstall"
     ExecWait '"$INSTDIR\${EXE_NAME}" down'
 
-    ClearErrors
-    ReadRegStr $0 HKCU "Environment" "Path"
+    Call un.WriteUninstallPathScript
 
-    ${IfNot} ${Errors}
-        StrCpy $2 "$INSTDIR"
-        Call un.RemovePathEntry
+    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\lighthouse-path-uninstall.ps1" "$INSTDIR"' $9
 
-        WriteRegExpandStr HKCU "Environment" "Path" "$0"
-        SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
-    ${EndIf}
+    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 
     Delete "$INSTDIR\${EXE_NAME}"
     Delete "$INSTDIR\uninstall.exe"
