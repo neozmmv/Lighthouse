@@ -298,13 +298,13 @@ pub fn run() {
             let log_item = MenuItem::with_id(app, "log", "", false, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
             let tor_item =
-                CheckMenuItem::with_id(app, "mode_tor", "Tor", true, true, None::<&str>)?;
+                CheckMenuItem::with_id(app, "mode_tor", "Tor", true, false, None::<&str>)?;
             let cf_item = CheckMenuItem::with_id(
                 app,
                 "mode_cf",
                 "Cloudflare Tunnel",
                 true,
-                false,
+                true,
                 None::<&str>,
             )?;
             let sep2 = PredefinedMenuItem::separator(app)?;
@@ -334,7 +334,7 @@ pub fn run() {
             )?;
 
             let state = Arc::new(Mutex::new(AppState {
-                mode: Mode::Tor,
+                mode: Mode::Cloudflare,
                 running: false,
                 starting: false,
                 url: None,
