@@ -19,10 +19,13 @@ ChangesEnvironment=yes
 [Components]
 Name: "startup"; Description: "Start Lighthouse Tray automatically with Windows"; Types: full compact custom
 
+[Files]
+Source: "cli\lighthouse.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "tray\src-tauri\target\release\lighthouse-tray.exe"; DestDir: "{app}"; Flags: ignoreversion
+
 [Icons]
 Name: "{userprograms}\Lighthouse\Lighthouse Tray"; Filename: "{app}\{#TrayExeName}"
 Name: "{userstartup}\Lighthouse Tray"; Filename: "{app}\{#TrayExeName}"; Components: startup
-
 
 [Run]
 Filename: "{app}\{#TrayExeName}"; Description: "Start Lighthouse Tray"; Flags: postinstall nowait skipifsilent
@@ -45,7 +48,7 @@ begin
     '$items = @($path -split '';'' | Where-Object { $_ -ne '''' })' + #13#10 +
     '$exists = $false' + #13#10 +
     'foreach ($item in $items) {' + #13#10 +
-    '  if ($item.TrimEnd(''\'') -ieq $dir.TrimEnd(''\'')) { $exists = $true; break }' + #13#10 +
+    '  if ($item.TrimEnd([char]92) -ieq $dir.TrimEnd([char]92)) { $exists = $true; break }' + #13#10 +
     '}' + #13#10 +
     'if (-not $exists) {' + #13#10 +
     '  $backup = [Environment]::GetEnvironmentVariable(''Path_Backup_Before_Lighthouse'', ''User'')' + #13#10 +
@@ -78,7 +81,7 @@ begin
     '$dir = $args[0]' + #13#10 +
     '$path = [Environment]::GetEnvironmentVariable(''Path'', ''User'')' + #13#10 +
     'if ($null -ne $path) {' + #13#10 +
-    '  $items = @($path -split '';'' | Where-Object { $_ -ne '''' -and $_.TrimEnd(''\'') -ine $dir.TrimEnd(''\'') })' + #13#10 +
+    '  $items = @($path -split '';'' | Where-Object { $_ -ne '''' -and $_.TrimEnd([char]92) -ine $dir.TrimEnd([char]92) })' + #13#10 +
     '  [Environment]::SetEnvironmentVariable(''Path'', ($items -join '';''), ''User'')' + #13#10 +
     '}' + #13#10 +
     'exit 0';

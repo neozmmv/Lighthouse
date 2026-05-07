@@ -1,4 +1,5 @@
 name: Release
+
 on:
   push:
     tags:
@@ -11,21 +12,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
+
       - name: Build Linux amd64
         run: go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=dev" -o lighthouse-linux-amd64
         working-directory: cli
+
       - name: Build Linux arm64
         run: GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=dev" -o lighthouse-linux-arm64
         working-directory: cli
+
       - name: Build macOS amd64
         run: GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=dev" -o lighthouse-darwin-amd64
         working-directory: cli
+
       - name: Build macOS arm64
         run: GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=dev" -o lighthouse-darwin-arm64
         working-directory: cli
+
       - uses: actions/upload-artifact@v4
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -67,23 +74,27 @@ jobs:
         run: go build -ldflags "-X github.com/neozmmv/Lighthouse/cli/cmd.version=${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}" -o lighthouse.exe .
         working-directory: cli
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: tray
-
-      - name: Build tray
-        uses: tauri-apps/tauri-action@v0
-        with:
-          projectPath: tray
-          args: --no-bundle
-
-      - name: Find tray binary
+      - name: Download latest tray binary
         shell: pwsh
-        run: Get-ChildItem -Recurse tray\target\release\*.exe | Select-Object FullName
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          New-Item -ItemType Directory -Force -Path tray\src-tauri\target\release | Out-Null
+
+          $release = gh release list --repo neozmmv/Lighthouse --limit 100 --json tagName |
+                     ConvertFrom-Json |
+                     Where-Object { $_.tagName -like 'tray-v*' } |
+                     Select-Object -First 1
+
+          if (-not $release) {
+            Write-Error "No tray-v* release found. Publish a tray release first."
+            exit 1
+          }
+
+          gh release download $release.tagName `
+            --repo neozmmv/Lighthouse `
+            --pattern lighthouse-tray.exe `
+            --dir tray\src-tauri\target\release
 
       - name: Update version in installer
         shell: pwsh
@@ -111,12 +122,15 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: unix-binaries
+
       - uses: actions/download-artifact@v4
         with:
           name: windows-installer
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:

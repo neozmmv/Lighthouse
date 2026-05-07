@@ -1,0 +1,36 @@
+name: Release Tray
+
+on:
+  push:
+    tags:
+      - "tray-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tray/src-tauri
+
+      - name: Build tray
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: tray
+          args: --no-bundle
+
+      - name: Publish tray binary
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Lighthouse Tray ${{ github.ref_name }}"
+          files: tray/src-tauri/target/release/lighthouse-tray.exe
