@@ -14,14 +14,15 @@ Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
 UninstallDisplayName={#AppName}
-DisableProgramGroupPage=yes
+ChangesEnvironment=yes
 
-[Files]
-Source: "cli\lighthouse.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "tray\target\release\lighthouse-tray.exe"; DestDir: "{app}"; Flags: ignoreversion
+[Components]
+Name: "startup"; Description: "Start Lighthouse Tray automatically with Windows"; Types: full compact custom
 
 [Icons]
-Name: "{userstartup}\Lighthouse Tray"; Filename: "{app}\{#TrayExeName}"
+Name: "{userprograms}\Lighthouse\Lighthouse Tray"; Filename: "{app}\{#TrayExeName}"
+Name: "{userstartup}\Lighthouse Tray"; Filename: "{app}\{#TrayExeName}"; Components: startup
+
 
 [Run]
 Filename: "{app}\{#TrayExeName}"; Description: "Start Lighthouse Tray"; Flags: postinstall nowait skipifsilent

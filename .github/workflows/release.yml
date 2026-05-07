@@ -81,6 +81,10 @@ jobs:
           projectPath: tray
           args: --no-bundle
 
+      - name: Find tray binary
+        shell: pwsh
+        run: Get-ChildItem -Recurse tray\target\release\*.exe | Select-Object FullName
+
       - name: Update version in installer
         shell: pwsh
         run: |
