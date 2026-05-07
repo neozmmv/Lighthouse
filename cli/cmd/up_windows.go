@@ -72,6 +72,36 @@ func clearTunnelURL() {
 	os.Remove(filepath.Join(dir, "tunnel_url"))
 }
 
+func getTorURL() (string, error) {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get lighthouse directory: %w", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "tor_url"))
+	if err != nil {
+		return "", fmt.Errorf("failed to read tor URL: %w", err)
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+func saveTorURL(url string) error {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return fmt.Errorf("failed to get lighthouse directory: %w", err)
+	}
+	return os.WriteFile(filepath.Join(dir, "tor_url"), []byte(url), 0600)
+}
+
+func clearTorURL() {
+	dir, err := getLighthouseDir()
+	if err != nil {
+		return
+	}
+	os.Remove(filepath.Join(dir, "tor_url"))
+}
+
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start Lighthouse",
@@ -100,6 +130,8 @@ var upCmd = &cobra.Command{
 		fmt.Println("Starting Lighthouse...")
 		if tunnel {
 			clearTunnelURL() // remove any stale URL from a previous run
+		} else {
+			clearTorURL() // remove any stale URL from a previous run
 		}
 
 		if err := startDaemon(tunnel); err != nil {
@@ -125,20 +157,20 @@ var upCmd = &cobra.Command{
 
 			fmt.Printf("Lighthouse is running at: %s\n", tunnelURL)
 		} else {
-			// wait for Tor to bootstrap by polling the hostname file
+			// wait for Tor + backend + Caddy to be fully ready
 			fmt.Print("Waiting for Tor")
-			for i := 0; i < 60; i++ {
+			for i := 0; i < 120; i++ {
 				time.Sleep(1 * time.Second)
 				fmt.Print(".")
-				if _, err := getOnionAddress(); err == nil {
+				if _, err := getTorURL(); err == nil {
 					break
 				}
 			}
 			fmt.Println()
 
-			onion, err := getOnionAddress()
+			onion, err := getTorURL()
 			if err != nil {
-				return fmt.Errorf("tor did not bootstrap in time: %w", err)
+				return fmt.Errorf("tor did not start in time: %w", err)
 			}
 
 			fmt.Printf("Lighthouse is running at: %s\n", onion)
@@ -394,6 +426,14 @@ var daemonCmd = &cobra.Command{
 			return fmt.Errorf("failed to assign Caddy to job: %w", err)
 		}
 
+		if err := saveTorURL(onion); err != nil {
+			minio.Process.Kill()
+			tor.Process.Kill()
+			backend.Process.Kill()
+			caddy.Process.Kill()
+			return fmt.Errorf("failed to save tor URL: %w", err)
+		}
+
 		done := make(chan error, 4)
 		go func() { done <- minio.Wait() }()
 		go func() { done <- tor.Wait() }()
@@ -406,6 +446,7 @@ var daemonCmd = &cobra.Command{
 		backend.Process.Kill()
 		caddy.Process.Kill()
 		clearPid()
+		clearTorURL()
 		return nil
 	},
 }

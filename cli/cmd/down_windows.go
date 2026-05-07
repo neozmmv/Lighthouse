@@ -54,6 +54,7 @@ var downCmd = &cobra.Command{
 			}
 		}
 		clearTunnelURL()
+		clearTorURL()
 		clearCloudflaredPid()
 		fmt.Println("Lighthouse stopped.")
 		return nil
