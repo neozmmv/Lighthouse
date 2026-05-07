@@ -1,6 +1,7 @@
 #define AppName "Lighthouse"
 #define AppVersion "1.0.0-win"
 #define ExeName "lighthouse.exe"
+#define TrayExeName "lighthouse-tray.exe"
 
 [Setup]
 AppName={#AppName}
@@ -17,16 +18,24 @@ DisableProgramGroupPage=yes
 
 [Files]
 Source: "cli\lighthouse.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "tray\target\release\lighthouse-tray.exe"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{userstartup}\Lighthouse Tray"; Filename: "{app}\{#TrayExeName}"
+
+[Run]
+Filename: "{app}\{#TrayExeName}"; Description: "Start Lighthouse Tray"; Flags: postinstall nowait skipifsilent
+
+[UninstallRun]
+Filename: "taskkill"; Parameters: "/F /IM {#TrayExeName}"; Flags: runhidden waituntilterminated
 
 [Code]
-
 procedure AddToPath();
 var
   PS, TmpFile: String;
   ResultCode: Integer;
 begin
   TmpFile := ExpandConstant('{tmp}\lighthouse-path-install.ps1');
-
   PS :=
     '$ErrorActionPreference = ''Stop''' + #13#10 +
     '$dir = $args[0]' + #13#10 +
@@ -46,9 +55,7 @@ begin
     '  [Environment]::SetEnvironmentVariable(''Path'', ($items -join '';''), ''User'')' + #13#10 +
     '}' + #13#10 +
     'exit 0';
-
   SaveStringToFile(TmpFile, PS, False);
-
   if not Exec('powershell.exe',
               '-NoProfile -ExecutionPolicy Bypass -File "' + TmpFile + '" "' +
               ExpandConstant('{app}') + '"',
@@ -65,7 +72,6 @@ var
   ResultCode: Integer;
 begin
   TmpFile := ExpandConstant('{tmp}\lighthouse-path-uninstall.ps1');
-
   PS :=
     '$ErrorActionPreference = ''Stop''' + #13#10 +
     '$dir = $args[0]' + #13#10 +
@@ -75,9 +81,7 @@ begin
     '  [Environment]::SetEnvironmentVariable(''Path'', ($items -join '';''), ''User'')' + #13#10 +
     '}' + #13#10 +
     'exit 0';
-
   SaveStringToFile(TmpFile, PS, False);
-
   Exec('powershell.exe',
        '-NoProfile -ExecutionPolicy Bypass -File "' + TmpFile + '" "' +
        ExpandConstant('{app}') + '"',
