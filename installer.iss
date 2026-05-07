@@ -10,6 +10,7 @@ AppPublisher={#AppName}
 DefaultDirName={localappdata}\Lighthouse
 DisableDirPage=no
 OutputBaseFilename=LighthouseSetup
+OutputDir=.
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
