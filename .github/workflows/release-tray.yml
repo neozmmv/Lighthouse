@@ -29,8 +29,14 @@ jobs:
           projectPath: tray
           args: --no-bundle
 
+      - name: Set release name
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".Replace("tray-", "")
+          "TRAY_RELEASE_NAME=Lighthouse Tray $version" >> $env:GITHUB_ENV
+
       - name: Publish tray binary
         uses: softprops/action-gh-release@v2
         with:
-          name: "Lighthouse Tray ${{ github.ref_name }}"
+          name: "${{ env.TRAY_RELEASE_NAME }}"
           files: tray/src-tauri/target/release/lighthouse-tray.exe
