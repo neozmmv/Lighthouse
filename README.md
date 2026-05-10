@@ -4,6 +4,8 @@
 
 A temporary and self-hosted file-receiving station. Run it, share your address, receive files, shut it down.
 
+<img src="assets/lighthouse-tray.gif">
+
 ## Concept
 
 Lighthouse removes the usual friction from receiving files from someone:
