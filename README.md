@@ -162,6 +162,18 @@ curl -fsSL https://github.com/neozmmv/Lighthouse/releases/latest/download/uninst
 
 Use **Add or remove programs** in Windows Settings.
 
+## Support the project!
+
+If you find Lighthouse useful, consider supporting development:
+
+<p align="center">
+  <img src="assets/bitcoin-qrcode.png" width="200" alt="Bitcoin QR Code"/>
+  <br/>
+  <code>bc1qzvmxmc3t5fwvuqamufa6s73dfr7c2p90t3vdpu</code>
+</p>
+
+<!-- **Bitcoin:** `bc1qzvmxmc3t5fwvuqamufa6s73dfr7c2p90t3vdpu` -->
+
 ## Project structure
 
 ```
