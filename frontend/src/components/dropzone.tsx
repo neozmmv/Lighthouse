@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { DragEvent, ChangeEvent } from "react";
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB per part
+const CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB per part
 
 type DropState =
   | "idle"
@@ -72,7 +72,14 @@ async function uploadChunkWithRetry(
       const delay = Math.min(1000 * 2 ** (attempt - 1), 16000); // 1s, 2s, 4s, 8s
       await new Promise<void>((res, rej) => {
         const t = setTimeout(res, delay);
-        signal.addEventListener("abort", () => { clearTimeout(t); rej(new DOMException("Aborted", "AbortError")); }, { once: true });
+        signal.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(t);
+            rej(new DOMException("Aborted", "AbortError"));
+          },
+          { once: true },
+        );
       });
     }
     try {
@@ -100,9 +107,10 @@ export default function Dropzone() {
 
   useEffect(() => {
     fetch("/api/config")
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.upload_concurrency) concurrencyRef.current = data.upload_concurrency;
+        if (data?.upload_concurrency)
+          concurrencyRef.current = data.upload_concurrency;
       })
       .catch(() => {});
   }, []);
@@ -203,7 +211,7 @@ export default function Dropzone() {
       ctx = { file_id, upload_id };
       ctxRef.current = ctx;
 
-      // 2. Upload chunks in parallel (1 on Tor to avoid circuit issues, 5 on Cloudflare)
+      // 2. Upload chunks in parallel (1 on Tor to avoid circuit issues, 8 on Cloudflare)
       const CONCURRENCY = concurrencyRef.current;
       const parts: { part_number: number; etag: string }[] = new Array(
         totalChunks,

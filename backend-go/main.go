@@ -125,7 +125,7 @@ func (s *server) health(c *gin.Context) {
 func (s *server) config(c *gin.Context) {
 	concurrency := 1
 	if os.Getenv("MINIO_LOCAL_ENDPOINT") != "" {
-		concurrency = 5
+		concurrency = 8
 	}
 	c.JSON(http.StatusOK, gin.H{"upload_concurrency": concurrency})
 }
