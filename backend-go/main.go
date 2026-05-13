@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -65,7 +66,7 @@ func newServer() (*server, error) {
 	minioEndpoint := getEnv("MINIO_ENDPOINT", "127.0.0.1:9000")
 	minioLocalEndpoint := getEnv("MINIO_LOCAL_ENDPOINT", "127.0.0.1:9000")
 	minioUser := getEnv("MINIO_ROOT_USER", "lighthouse")
-	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse")
+	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse_secret")
 
 	s3, err := minio.New(minioEndpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(minioUser, minioPass, ""),
@@ -85,6 +86,18 @@ func newServer() (*server, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create S3 local client: %w", err)
+	}
+
+	ctx := context.Background()
+	exists, err := s3.BucketExists(ctx, bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check bucket: %w", err)
+	}
+	if !exists {
+		if err := s3.MakeBucket(ctx, bucket, minio.MakeBucketOptions{Region: "us-east-1"}); err != nil {
+			return nil, fmt.Errorf("failed to create bucket: %w", err)
+		}
+		log.Printf("created bucket %q", bucket)
 	}
 
 	return &server{s3: s3, s3Local: s3Local}, nil
@@ -152,7 +165,7 @@ func (s *server) uploadInit(c *gin.Context) {
 	// presigning only — Presign() computes the signature locally, no connection is made
 	publicHost, publicSecure := parseEndpoint(getOnionEndpoint())
 	minioUser := getEnv("MINIO_ROOT_USER", "lighthouse")
-	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse")
+	minioPass := getEnv("MINIO_ROOT_PASSWORD", "lighthouse_secret")
 
 	s3Public, err := minio.New(publicHost, &minio.Options{
 		Creds:        credentials.NewStaticV4(minioUser, minioPass, ""),
