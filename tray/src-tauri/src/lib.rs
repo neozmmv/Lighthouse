@@ -310,6 +310,9 @@ fn start_poller(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
+            // blocks more than one instance
+        }))
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let status_item = MenuItem::with_id(app, "status", "● Stopped", false, None::<&str>)?;
