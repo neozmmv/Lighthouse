@@ -249,7 +249,7 @@ var daemonCmd = &cobra.Command{
 			}
 
 			// start backend with the tunnel URL as the public MinIO endpoint
-			backend := exec.Command(filepath.Join(binDir, "backend.exe"))
+			backend := exec.Command(filepath.Join(binDir, "lighthouse_server.exe"))
 			backend.SysProcAttr = &syscall.SysProcAttr{
 				CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 			}
@@ -376,7 +376,7 @@ var daemonCmd = &cobra.Command{
 			return fmt.Errorf("failed to read onion address: %w", err)
 		}
 
-		backend := exec.Command(filepath.Join(binDir, "backend.exe"))
+		backend := exec.Command(filepath.Join(binDir, "lighthouse_server.exe"))
 		backend.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
 		}

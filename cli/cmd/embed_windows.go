@@ -5,7 +5,7 @@ import (
 	_ "embed"
 )
 
-//go:embed backend.exe
+//go:embed lighthouse_server.exe
 var backendBinary []byte
 
 //go:embed frontend

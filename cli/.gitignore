@@ -1,5 +1,6 @@
 lighthouse
 lighthouse.exe*
 backend
-backend.exe*
+backend.exe
+lighthouse_server.exe
 frontend/

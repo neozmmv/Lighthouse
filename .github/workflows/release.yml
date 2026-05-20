@@ -69,7 +69,7 @@ jobs:
         run: Copy-Item -Recurse frontend/dist cli/cmd/frontend
 
       - name: Build backend
-        run: go build -o ../cli/cmd/backend.exe .
+        run: go build -o ../cli/cmd/lighthouse_server.exe .
         working-directory: backend-go
 
       - name: Build lighthouse.exe

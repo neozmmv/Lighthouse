@@ -218,7 +218,7 @@ func extractBackend() error {
 		return err
 	}
 
-	dest := filepath.Join(binDir, "backend.exe")
+	dest := filepath.Join(binDir, "lighthouse_server.exe")
 	if err := os.WriteFile(dest, backendBinary, 0755); err != nil {
 		return fmt.Errorf("failed to extract backend: %w", err)
 	}
